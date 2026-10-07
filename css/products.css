@@ -1,0 +1,83 @@
+.list-header, .row {
+    display: grid;
+    grid-template-columns: 44px 1fr 90px 100px 240px 250px;
+    align-items: center;
+    gap: 18px;
+}
+
+.list-header {
+    padding: 0 13px 8px 19px;
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+}
+
+.product-list, .subproducts {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+/* Line connecting subproducts */
+.subproducts {
+    margin: 10px 0 0 22px;
+    padding-left: 18px;
+    border-left: 2px solid var(--accent);
+}
+
+.row {
+    padding: 12px 12px 12px 18px;
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    background: var(--background);
+    font-weight: 600;
+}
+
+.row:has([open]) {
+    position: relative;
+    z-index: 10;
+}
+
+.name {
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.thumb {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    background: var(--accent-light);
+    color: var(--primary-hover);
+    font-size: 0.8rem;
+}
+
+.actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 6px;
+}
+
+.btn-sale {
+    width: 124px;
+}
+
+.btn-view {
+    width: 70px;
+}
+
+@media(max-width: 1150px) {
+    .list-header, .row {
+        grid-template-columns: 44px 1fr 60px 80px 170px 240px;
+        gap: 12px;
+    }
+
+    .list-header {
+        padding-left: 19px;
+    }
+}
