@@ -21,6 +21,9 @@ public class DatabaseConnectionTest {
     try (Connection connection = DatabaseConnection.open();
         Statement statement = connection.createStatement()) {
       statement.setQueryTimeout(5);
+      try (ResultSet resultSet = statement.executeQuery("SELECT * FROM \"Product\" LIMIT 1")) {
+                assertTrue(resultSet != null);
+      }
 
       try (ResultSet result = statement.executeQuery("SELECT 1")) {
         assertTrue(result.next());
