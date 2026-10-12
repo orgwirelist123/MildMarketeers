@@ -1,6 +1,6 @@
 /*
-Shared styles throughtout the project, such as colors, base, layout (sidebar, main), and shared
-elements (buttons, search, dropddowns, tags).
+Shared styles throughout the project, such as colors, base, layout (sidebar, main), and shared
+elements (buttons, search, dropdowns, tags).
 */
 
 /* ===== Colors ===== */
@@ -73,7 +73,7 @@ svg {
     stroke-linejoin: round;
 }
 
-.avatar, .plus, .thumb, .dots, .close-btn {
+.avatar, .plus, .thumb, .dots, .close-btn, .notification-icon {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -224,13 +224,13 @@ svg {
     transform: scale(0.95);
 }
 
-.btn-primary, .btn-dark {
+.btn-dark {
     background: var(--primary);
     border-color: var(--primary);
     color: white;
 }
 
-.btn-primary:hover, .btn-dark:hover {
+.btn-dark:hover {
     background: var(--primary-hover);
     color: var(--accent);
 }
@@ -405,8 +405,8 @@ svg {
 .tag {
     padding: 3px 10px;
     border-radius: 1000px;
-    background: var(--accent-light);
-    color: var(--primary-hover);
+    background: var(--tag-bg, var(--accent-light));
+    color: var(--tag-text, var(--primary-hover));
     font-size: 0.75rem;
     white-space: nowrap;
 }
@@ -432,6 +432,24 @@ svg {
     display: flex;
     flex-direction: column;
     gap: 6px;
+}
+
+/* Tag Colors */
+.tag-green { --tag-bg: #EEF8D6; --tag-text: #1F4D32; --tag-dot: #B5E34A; }
+.tag-blue { --tag-bg: #E3EEFB; --tag-text: #1E4A7A; --tag-dot: #6FA8E8; }
+.tag-purple { --tag-bg: #EEEAFB; --tag-text: #4A3A8C; --tag-dot: #9B8BE0; }
+.tag-pink { --tag-bg: #FBE7F0; --tag-text: #8A2C55; --tag-dot: #E88BB5; }
+.tag-red { --tag-bg: #FBE6E4; --tag-text: #8E2A23; --tag-dot: #E8776F; }
+.tag-orange { --tag-bg: #FCEBDC; --tag-text: #8A4A12; --tag-dot: #F0A35E; }
+.tag-yellow { --tag-bg: #FBF3D0; --tag-text: #6E5A0B; --tag-dot: #E8CC4F; }
+.tag-gray { --tag-bg: #ECEFEC; --tag-text: #4A554E; --tag-dot: #A3AEA6; }
+
+.tag-dot {
+    width: 10px;
+    height: 10px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    background: var(--tag-dot, var(--accent));
 }
 
 /* ===== Panels ===== */
@@ -513,6 +531,74 @@ svg {
 .close-btn:hover {
     background: var(--accent-light);
     color: var(--text);
+}
+
+/* ===== Notifications ===== */
+.notifications {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 20;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 10px;
+}
+
+.notification {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    max-width: 440px;
+    padding: 10px 10px 10px 12px;
+    border-radius: 20px;
+    background: var(--primary);
+    color: white;
+    font-weight: 600;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2), 0 16px 40px rgba(0, 0, 0, 0.35);
+    animation: notification-in 0.25s ease-out;
+}
+
+.notification:nth-last-child(n+4) {
+    display: none;
+}
+
+.notification-icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: var(--primary);
+}
+
+.notification-icon svg {
+    width: 16px;
+    height: 16px;
+    stroke-width: 3;
+}
+
+.notification-message {
+    flex: 1;
+}
+
+.notification .close-btn {
+    width: 30px;
+    height: 30px;
+    margin: 0;
+    color: var(--sidebar-text);
+}
+
+.notification .close-btn:hover {
+    background: var(--primary-hover);
+    color: white;
+}
+
+.notification .close-btn:active {
+    transform: scale(0.9);
+}
+
+@keyframes notification-in {
+    from { transform: translateY(12px); opacity: 0;}
 }
 
 /* ===== Responsiveness ===== */
