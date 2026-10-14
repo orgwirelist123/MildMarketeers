@@ -29,13 +29,21 @@ public class Products
         return result;
     }
 
+    /***
+     * Queries the database's 'Product' table to sort the records based on product name (ascending), sell price (ascending),
+     * highest inventory size, and lowest inventory size. 
+     * Queries the database's 'ProductHistory' table to sort the records based on product added date (ascending).
+     * Queries the database's 'SaleHistory' table to sort the records based on product last sold date (ascending).
+     * @param sortBy the string to sort all products in the inventory
+     * @return a result set of entries sorted based on the sortBy param
+     * @throws SQLException
+     */
     public ResultSet sort(String sortBy) throws SQLException {
         Connection connection = DatabaseConnection.open();
         Statement statement = connection.createStatement();
 
         String orderBy = "";
-        ResultSet result;
-        if(sortBy.equals("Alphabetically")) {
+        if(sortBy.equals("Name")) {
             orderBy = "name";
         }
         else if(sortBy.equals("Price")) {
@@ -48,20 +56,15 @@ public class Products
             orderBy = "inventory";
         }
         else if(sortBy.equals("AddDate")) {
-            // query = select distinct on (product_id) from "ProductHistory" order by change_date, change_time
-            result = statement.executeQuery("SELECT DISTINCT ON (product_id) FROM \"ProductHistory\" ORDER BY change_date, change_time");
+            return statement.executeQuery("SELECT DISTINCT ON (product_id) FROM \"ProductHistory\" ORDER BY change_date, change_time");
         }
         else if(sortBy.equals("LastSoldDate")) {
-            // query = select distinct on (product_id) from "SaleHistory" order by change_date, change_time
-            result = statement.executeQuery("SELECT DISTINCT ON (product_id) FROM \"SaleHistory\" ORDER BY change_date, change_time");
-
+            return statement.executeQuery("SELECT DISTINCT ON (product_id) FROM \"SaleHistory\" ORDER BY change_date, change_time");
         }
-
-        result = statement.executeQuery("SELECT * FROM \"Product\" ORDER BY " + orderBy);
-
+        
         statement.close();
         connection.close();
 
-        return result;
+        return statement.executeQuery("SELECT * FROM \"Product\" ORDER BY " + orderBy);
     }
 }
