@@ -23,7 +23,6 @@ public class Products
         Statement statement = connection.createStatement();
         ResultSet result = statement.executeQuery("SELECT * FROM \"Product\" WHERE name LIKE \"%" + searchString + "%\"");
         
-        // Close
         statement.close();
         connection.close();
 
