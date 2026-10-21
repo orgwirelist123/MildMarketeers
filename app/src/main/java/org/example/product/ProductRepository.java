@@ -1,0 +1,148 @@
+package org.example.product;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.Optional;
+import org.example.database.DatabaseConnection;
+
+/** Reads and writes stored product information. */
+public final class ProductRepository {
+
+  /**
+   * Retrieves a product's current basic details.
+   *
+   * @param productId identifier of the requested product
+   * @return the product, or an empty result if it does not exist
+   * @throws SQLException if the database query fails
+   */
+  public Optional<ProductDetails> findById(int productId) throws SQLException {
+    String sql =
+        """
+        SELECT product_id, name, sell_price, inventory
+        FROM ONLY public."Product"
+        WHERE product_id = ?
+        """;
+
+    try (Connection connection = DatabaseConnection.open();
+        PreparedStatement statement = connection.prepareStatement(sql)) {
+      statement.setInt(1, productId);
+      statement.setQueryTimeout(5);
+
+      try (ResultSet results = statement.executeQuery()) {
+        if (!results.next()) {
+          return Optional.empty();
+        }
+
+        return Optional.of(
+            new ProductDetails(
+                results.getInt("product_id"),
+                results.getString("name"),
+                results.getBigDecimal("sell_price"),
+                results.getInt("inventory")));
+      }
+    }
+  }
+	  /**
+   * Updates basic product details and records the previous product state.
+   *
+   * @param request validated product changes
+   * @return true if the product was updated, or false if it does not exist
+   * @throws SQLException if saving or recording history fails
+   */
+  public boolean update(EditProductRequest request) throws SQLException {
+    java.util.Objects.requireNonNull(request, "Edit request is required.");
+
+    try (Connection connection = DatabaseConnection.open()) {
+      connection.setAutoCommit(false);
+
+      try {
+        // The current schema has no automatic history ID generator.
+        // Hold this lock until commit so concurrent history writes cannot
+        // allocate the same next ID.
+        try (PreparedStatement statement =
+            connection.prepareStatement(
+                "LOCK TABLE public.\"ProductHistory\" IN EXCLUSIVE MODE")) {
+          statement.setQueryTimeout(5);
+          statement.execute();
+        }
+
+        // Lock the current product so its saved history matches the state
+        // immediately before this update.
+        try (PreparedStatement statement =
+            connection.prepareStatement(
+                """
+                SELECT product_id
+                FROM ONLY public."Product"
+                WHERE product_id = ?
+                FOR UPDATE
+                """)) {
+          statement.setInt(1, request.productId());
+          statement.setQueryTimeout(5);
+
+          try (ResultSet result = statement.executeQuery()) {
+            if (!result.next()) {
+              connection.rollback();
+              return false;
+            }
+          }
+        }
+
+        String historySql =
+            """
+            INSERT INTO public."ProductHistory"
+                (product_id, name, sell_price, units_sold, inventory,
+                 parent_id, change_id, change_date, change_time)
+            SELECT product_id, name, sell_price, units_sold, inventory,
+                   parent_id,
+                   (SELECT COALESCE(MAX(change_id), 0) + 1
+                    FROM ONLY public."ProductHistory"),
+                   CURRENT_DATE, LOCALTIMESTAMP(0)
+            FROM ONLY public."Product"
+            WHERE product_id = ?
+            """;
+
+        try (PreparedStatement statement =
+            connection.prepareStatement(historySql)) {
+          statement.setInt(1, request.productId());
+          statement.setQueryTimeout(5);
+
+          if (statement.executeUpdate() != 1) {
+            throw new SQLException("Could not record the product's previous state.");
+          }
+        }
+
+        String updateSql =
+            """
+            UPDATE ONLY public."Product"
+            SET name = ?, sell_price = ?, inventory = ?
+            WHERE product_id = ?
+            """;
+
+        try (PreparedStatement statement =
+            connection.prepareStatement(updateSql)) {
+          statement.setString(1, request.name());
+          statement.setBigDecimal(2, request.sellPrice());
+          statement.setInt(3, request.inventory());
+          statement.setInt(4, request.productId());
+          statement.setQueryTimeout(5);
+
+          if (statement.executeUpdate() != 1) {
+            throw new SQLException("Could not update the product.");
+          }
+        }
+
+        connection.commit();
+        return true;
+      } catch (SQLException | RuntimeException exception) {
+        try {
+          connection.rollback();
+        } catch (SQLException rollbackException) {
+          exception.addSuppressed(rollbackException);
+        }
+        throw exception;
+      }
+    }
+  }
+}
