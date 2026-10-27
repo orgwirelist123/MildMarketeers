@@ -40,7 +40,7 @@
     z-index: 10;
 }
 
-.name {
+.name, .stock, .price {
     min-width: 0;
     white-space: nowrap;
     overflow: hidden;
@@ -96,7 +96,7 @@
 
 .stat-cards {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 10px;
     margin-bottom: 20px;
 }
@@ -119,6 +119,7 @@
 .stat-value {
     font-size: 1.3rem;
     font-weight: 700;
+    overflow-wrap: anywhere;
 }
 
 .graph-buttons {
@@ -352,9 +353,6 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
 }
 
 .tag-name {
@@ -582,4 +580,96 @@
 .form-footer {
     display: flex;
     margin-top: 8px;
+}
+
+/* ===== Register Sale Popup ===== */
+.sale-form {
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+}
+
+.sale-product {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.sale-product .thumb {
+    width: 40px;
+    height: 40px;
+}
+
+.sale-product-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.sale-product-name {
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.sale-product-stock {
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+}
+
+.quantity-picker {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.quantity-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 42px;
+    height: 42px;
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    background: var(--background);
+}
+
+.quantity-btn:hover {
+    background: var(--accent-light);
+    border-color: var(--primary-hover);
+}
+
+.quantity-btn:active {
+    transform: scale(0.9);
+}
+
+.quantity-picker-input {
+    width: 72px;
+    text-align: center;
+    font-weight: 600;
+    appearance: textfield;
+}
+
+/* Hides up/down buttons default to some browsers */
+.quantity-picker-input::-webkit-inner-spin-button, .quantity-picker-input::-webkit-outer-spin-button {
+    appearance: none;
+    margin: 0;
+}
+
+.sale-total {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-weight: 600;
+}
+
+.sale-total-amount {
+    font-weight: 700;
+}
+
+.sale-submit {
+    width: 100%;
+    padding: 10px 16px;
 }

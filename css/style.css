@@ -170,7 +170,14 @@ svg {
 .business-name {
     display: flex;
     flex-direction: column;
+    min-width: 0;
     font-size: 0.9rem;
+}
+
+.business-name strong, .business-name small {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .business-name strong {
@@ -434,6 +441,19 @@ svg {
     gap: 6px;
 }
 
+.tags > .tag, .tag-menu .tag {
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.tags > .tag {
+    max-width: 90px;
+}
+
+.tag-menu .tag {
+    max-width: 200px;
+}
+
 /* Tag Colors */
 .tag-green { --tag-bg: #EEF8D6; --tag-text: #1F4D32; --tag-dot: #B5E34A; }
 .tag-blue { --tag-bg: #E3EEFB; --tag-text: #1E4A7A; --tag-dot: #6FA8E8; }
@@ -579,6 +599,8 @@ svg {
 
 .notification-message {
     flex: 1;
+    min-width: 0;
+    overflow-wrap: anywhere;
 }
 
 .notification .close-btn {
