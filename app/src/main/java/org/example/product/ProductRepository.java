@@ -203,7 +203,7 @@ public final class ProductRepository {
             connection.prepareStatement(
                 """
                 INSERT INTO public."Product"
-                (product_id, name, sell_price, inventory)
+                (?, ?, ?, ?)
                 """)) {
           statement.setInt(1, newId);
           statement.setString(2, request.name());
