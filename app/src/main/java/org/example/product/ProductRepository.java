@@ -145,4 +145,115 @@ public final class ProductRepository {
       }
     }
   }
+
+  /**
+   * Add a product details and records the previous product state.
+   *
+   * @param request validated product addition
+   * @return true if the product was added, or false if it was not
+   * @throws SQLException if adding or recording history fails
+   */
+  public boolean update(AddProductRequest request) throws SQLException {
+    java.util.Objects.requireNonNull(request, "Add request is required.");
+
+    try (Connection connection = DatabaseConnection.open()) {
+      connection.setAutoCommit(false);
+
+      try {
+        // The current schema has no automatic history ID generator.
+        // Hold this lock until commit so concurrent history writes cannot
+        // allocate the same next ID.
+        try (PreparedStatement statement =
+            connection.prepareStatement(
+                "LOCK TABLE public.\"ProductHistory\" IN EXCLUSIVE MODE")) {
+          statement.setQueryTimeout(5);
+          statement.execute();
+        }
+
+        int newId;
+        boolean inUse = true;
+
+        do{
+          // Generate a new productId for the new product.
+          newId = (int) Math.random() * Integer.MAX_VALUE;
+
+          // Check to see if a product with the ID exists.
+          try (PreparedStatement statement =
+              connection.prepareStatement(
+                  """
+                  SELECT product_id
+                  FROM ONLY public."Product"
+                  WHERE product_id = ?
+                  FOR UPDATE
+                  """)) {
+            statement.setInt(1, newId);
+            statement.setQueryTimeout(5);
+
+            try (ResultSet result = statement.executeQuery()) {
+              if (!result.next()) {
+                inUse = false;
+              }
+            }
+          }
+        }while(inUse);
+
+        // Lock the current product so its saved history matches the state
+        // immediately before this update.
+        try (PreparedStatement statement =
+            connection.prepareStatement(
+                """
+                INSERT INTO public."Product"
+                (product_id, name, sell_price, inventory)
+                """)) {
+          statement.setInt(1, newId);
+          statement.setString(2, request.name());
+          statement.setBigDecimal(3, request.sellPrice());
+          statement.setInt(4, request.inventory());
+        
+          statement.setQueryTimeout(5);
+          statement.executeUpdate();
+
+          try (ResultSet result = statement.executeQuery()) {
+            if (!result.next()) {
+              connection.rollback();
+              return false;
+            }
+          }
+        }
+
+        String historySql =
+            """
+            INSERT INTO public."ProductHistory"
+                (product_id, name, sell_price, units_sold, inventory,
+                 parent_id, change_id, change_date, change_time)
+            SELECT product_id, name, sell_price, units_sold, inventory,
+                   parent_id,
+                   (SELECT COALESCE(MAX(change_id), 0) + 1
+                    FROM ONLY public."ProductHistory"),
+                   CURRENT_DATE, LOCALTIMESTAMP(0)
+            FROM ONLY public."Product"
+            WHERE product_id = ?
+            """;
+
+        try (PreparedStatement statement =
+            connection.prepareStatement(historySql)) {
+          statement.setInt(1, newId);
+          statement.setQueryTimeout(5);
+
+          if (statement.executeUpdate() != 1) {
+            throw new SQLException("Could not record the product's previous state.");
+          }
+        }
+        connection.commit();
+        return true;
+      } catch (SQLException | RuntimeException exception) {
+        try {
+          connection.rollback();
+        } catch (SQLException rollbackException) {
+          exception.addSuppressed(rollbackException);
+        }
+        throw exception;
+      }
+    }
+  }
 }
