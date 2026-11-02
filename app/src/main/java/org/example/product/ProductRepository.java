@@ -175,7 +175,8 @@ public final class ProductRepository {
 
         do{
           // Generate a new productId for the new product.
-          newId = (int) Math.random() * Integer.MAX_VALUE;
+          newId = java.util.concurrent.ThreadLocalRandom.current()
+              .nextInt(1, Integer.MAX_VALUE);
 
           // Check to see if a product with the ID exists.
           try (PreparedStatement statement =
@@ -199,25 +200,23 @@ public final class ProductRepository {
 
         // Lock the current product so its saved history matches the state
         // immediately before this update.
+                String insertSql =
+            """
+            INSERT INTO public."Product"
+                (product_id, name, sell_price, units_sold, inventory, parent_id)
+            VALUES (?, ?, ?, 0, ?, NULL)
+            """;
+
         try (PreparedStatement statement =
-            connection.prepareStatement(
-                """
-                INSERT INTO public."Product"
-                (?, ?, ?, ?)
-                """)) {
+            connection.prepareStatement(insertSql)) {
           statement.setInt(1, newId);
           statement.setString(2, request.name());
           statement.setBigDecimal(3, request.sellPrice());
           statement.setInt(4, request.inventory());
-        
           statement.setQueryTimeout(5);
-          statement.executeUpdate();
 
-          try (ResultSet result = statement.executeQuery()) {
-            if (!result.next()) {
-              connection.rollback();
-              return false;
-            }
+          if (statement.executeUpdate() != 1) {
+            throw new SQLException("Could not add the product.");
           }
         }
 
