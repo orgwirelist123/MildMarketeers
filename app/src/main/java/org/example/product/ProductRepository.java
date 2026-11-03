@@ -5,10 +5,48 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Optional;
+import java.util.ArrayList;
 import org.example.database.DatabaseConnection;
 
 /** Reads and writes stored product information. */
 public final class ProductRepository {
+
+  /**
+   * Retrieves the product details of all the products in the database.
+   *
+   * @return the product, or an empty result if it does not exist
+   * @throws SQLException if the database query fails
+   */
+  public ArrayList<ProductDetails> retrieveProducts() throws SQLException {
+    String sql =
+        """
+        SELECT product_id, name, sell_price, inventory
+        FROM ONLY public."Product"
+        """;
+
+    try (Connection connection = DatabaseConnection.open();
+        PreparedStatement statement = connection.prepareStatement(sql)) {
+      statement.setQueryTimeout(5);
+
+      try (ResultSet results = statement.executeQuery()) {
+        if (!results.next()) {
+          return new ArrayList<ProductDetails>();
+        }
+
+        ArrayList<ProductDetails> products = new ArrayList<ProductDetails>();
+        while(results.next())
+        {
+            products.add(new ProductDetails(
+                results.getInt("product_id"),
+                results.getString("name"),
+                results.getBigDecimal("sell_price"),
+                results.getInt("inventory")));
+        }
+        
+        return products;
+      }
+    }
+  }
 
   /**
    * Retrieves a product's current basic details.

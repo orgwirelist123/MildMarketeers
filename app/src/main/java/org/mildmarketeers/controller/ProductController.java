@@ -3,6 +3,7 @@ package org.mildmarketeers.controller;
 import java.math.BigDecimal;
 import java.sql.SQLException;
 import java.util.Map;
+import java.util.ArrayList;
 import org.example.product.AddProductRequest;
 import org.example.product.EditProductRequest;
 import org.example.product.ProductDetails;
@@ -94,6 +95,15 @@ public class ProductController {
 
     return ResponseEntity.status(500)
         .body(Map.of("message", "Could not complete the request. Please try again."));
+  }
+
+  /**  */
+  @GetMapping ("/display")
+  @ExceptionHandler({SQLException.class, IllegalStateException.class})
+  public ResponseEntity<ArrayList<ProductDetails>> diplayProducts() throws SQLException{
+    ArrayList<ProductDetails> products = repository.retrieveProducts();
+
+    return ResponseEntity.ok(products);
   }
 
   private static void requireInventory(ProductInput input) {
