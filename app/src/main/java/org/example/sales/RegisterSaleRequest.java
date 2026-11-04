@@ -28,7 +28,7 @@ public record RegisterSaleRequest(int productId, int quantity, int inventory, Bi
         }
 
         if (discount == null) {
-            throw new IllegalArgumentException("Discount is required.");
+            discount = BigDecimal.ZERO;
         }
 
         // Matches the current PostgreSQL numeric(2,0) column.
@@ -38,5 +38,11 @@ public record RegisterSaleRequest(int productId, int quantity, int inventory, Bi
         throw new IllegalArgumentException(
             "Discount must be a whole number between 0 and 99.");
         }
+
+        if (email == null) {
+            email = "";
+        }
+
+        email = email.strip();
     }
 }
