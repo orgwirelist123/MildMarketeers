@@ -29,10 +29,6 @@ public final class ProductRepository {
       statement.setQueryTimeout(5);
 
       try (ResultSet results = statement.executeQuery()) {
-        if (!results.next()) {
-          return new ArrayList<ProductDetails>();
-        }
-
         ArrayList<ProductDetails> products = new ArrayList<ProductDetails>();
         while(results.next())
         {

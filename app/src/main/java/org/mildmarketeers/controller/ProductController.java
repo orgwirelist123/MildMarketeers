@@ -20,6 +20,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import tools.jackson.databind.ObjectMapper;
+
 /** Connects product forms to the product repository. */
 @RestController
 @RequestMapping("/api/products")
@@ -100,10 +102,11 @@ public class ProductController {
   /**  */
   @GetMapping ("/display")
   @ExceptionHandler({SQLException.class, IllegalStateException.class})
-  public ResponseEntity<ArrayList<ProductDetails>> diplayProducts() throws SQLException{
+  public ResponseEntity<String> diplayProducts() throws SQLException{
     ArrayList<ProductDetails> products = repository.retrieveProducts();
-
-    return ResponseEntity.ok(products);
+    ObjectMapper objMapper = new ObjectMapper();
+    String jsonList = objMapper.writeValueAsString(products);
+    return ResponseEntity.ok(jsonList);
   }
 
   private static void requireInventory(ProductInput input) {
