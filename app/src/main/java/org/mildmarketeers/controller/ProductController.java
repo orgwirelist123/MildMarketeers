@@ -19,7 +19,6 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
 import tools.jackson.databind.ObjectMapper;
 
 /** Connects product forms to the product repository. */
@@ -42,6 +41,14 @@ public class ProductController {
     return repository.findById(productId)
         .map(product -> ResponseEntity.ok(product))
         .orElseGet(() -> ResponseEntity.notFound().build());
+  }
+
+  /**  */
+  @GetMapping ("/list")
+  @ExceptionHandler({SQLException.class, IllegalStateException.class})
+  public ResponseEntity<ArrayList<ProductDetails>> diplayProducts() throws SQLException{
+    ArrayList<ProductDetails> products = repository.retrieveProducts();
+    return ResponseEntity.ok(products);
   }
 
   /** Adds a product using the existing request validation and repository. */
@@ -97,16 +104,6 @@ public class ProductController {
 
     return ResponseEntity.status(500)
         .body(Map.of("message", "Could not complete the request. Please try again."));
-  }
-
-  /**  */
-  @GetMapping ("/display")
-  @ExceptionHandler({SQLException.class, IllegalStateException.class})
-  public ResponseEntity<String> diplayProducts() throws SQLException{
-    ArrayList<ProductDetails> products = repository.retrieveProducts();
-    ObjectMapper objMapper = new ObjectMapper();
-    String jsonList = objMapper.writeValueAsString(products);
-    return ResponseEntity.ok(jsonList);
   }
 
   private static void requireInventory(ProductInput input) {

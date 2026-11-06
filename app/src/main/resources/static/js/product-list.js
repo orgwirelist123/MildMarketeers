@@ -1,7 +1,7 @@
 "use strict";
 
 (() => {
-    const productList = document.getElementById('product-list');
+    const productList = document.querySelector('.product-list');
     const template = document.getElementById('template-product');
     const refreshButton = document.querySelector('.header-actions [title="Refresh"]');
     // const productGroupTemplate = document.getElementById('template-product-group');
@@ -37,13 +37,48 @@
             //     });
             // })
 
-            const response = await fetch(`/api/products/display`);
-            const jsArray = await response.json();
-            console.log("Contents:", jsArray);
+            const response = await fetch(`/api/products/list`);
+            console.log("Retrieved response. Reading response...");
+            const products = await readResponse(response);
+            console.log("Read response. Outputting...");
+            products.forEach(product => {
+                console.log(product.name);
+                const productEntry = template.content.cloneNode(true);
+                // const productEntry = document.importNode(template.contentEditable, true);
+                console.log(productEntry);
+                productEntry.querySelector('.name').textContent = product.name;
+                productEntry.querySelector('.stock').textContent = product.inventory;
+                productEntry.querySelector('.price').textContent = product.sellPrice;
+
+                console.log(productList);
+                productList.appendChild(productEntry);
+            });
 
         } catch (error) {
-            throw new Error(error.message);
+            console.log(error.message);
         }
+    }
+
+    async function readResponse(response) {
+        const text = await response.text();
+        let result = {};
+
+        try {
+        result = text ? JSON.parse(text) : {};
+        } catch {
+        throw new Error("The server returned an unexpected response.");
+        }
+
+        console.log("Result has been constructed! Checking response status...");
+        if (!response.ok) {
+        throw new Error(
+            result.message ||
+            (response.status === 404
+            ? "This product no longer exists."
+            : "Could not complete the request.")
+        );
+        }
+        return result;
     }
     
 })();
