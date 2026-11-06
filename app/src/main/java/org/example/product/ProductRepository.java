@@ -5,8 +5,9 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.Optional;
 import java.util.ArrayList;
+import java.util.Optional;
+
 import org.example.database.DatabaseConnection;
 
 /** Reads and writes stored product information. */
@@ -27,27 +28,28 @@ public final class ProductRepository {
     ArrayList<ProductDetails> products = new ArrayList<ProductDetails>();
     products.add(new ProductDetails(1, "TestProduct", new BigDecimal(100.00), 5));
     products.add(new ProductDetails(2, "TestProduct2", new BigDecimal(5.00), 10));
-    // try (Connection connection = DatabaseConnection.open(); PreparedStatement statement = connection.prepareStatement(sql)) {
-    //   statement.setQueryTimeout(5);
+    try (Connection connection = DatabaseConnection.open(); PreparedStatement statement = connection.prepareStatement(sql)) {
+      statement.setQueryTimeout(5);
 
-    //   try (ResultSet results = statement.executeQuery()) {
+      try (ResultSet results = statement.executeQuery()) {
         
-    //     // while(results.next())
-    //     // {
-    //     //   int id = results.getInt("product_id");
-    //     //   String name = results.getString("name");
-    //     //   BigDecimal price = results.getBigDecimal("sell_price");
-    //     //   int inventory = results.getInt("inventory");
-    //     //   products.add(new ProductDetails(id, name, price, inventory));
-    //     // }
+        while(results.next())
+        {
+          int id = results.getInt("product_id");
+          String name = results.getString("name");
+          BigDecimal price = results.getBigDecimal("sell_price");
+          int inventory = results.getInt("inventory");
+          products.add(new ProductDetails(id, name, price, inventory));
+        }
         
-    //     return products;
-    //   }
+        return products;
+      }
     
-    // } catch (Exception e) {
-    //   // TODO: handle exception
-    // }
-    return products;
+    } catch (Exception e) {
+      // TODO: handle exception
+    }
+    // return products;
+    return null;
   }
 
   /**
