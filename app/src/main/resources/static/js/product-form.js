@@ -23,8 +23,8 @@
   nameInput.maxLength = 50;
   quantityInput.max = "2147483647";
   priceInput.required = true;
-  priceInput.step = "1";
-  priceInput.max = "99";
+  // priceInput.step = "1";
+  priceInput.max = "9999999999";
 
   // These are the fields currently supported by the backend.
   const supportedInputs = [nameInput, quantityInput, priceInput];

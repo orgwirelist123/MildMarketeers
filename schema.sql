@@ -2,7 +2,7 @@
 CREATE TABLE "Product" (
     product_id integer NOT NULL,
     name character varying(50) NOT NULL,
-    sell_price numeric(2,0) NOT NULL,
+    sell_price numeric(12,2) NOT NULL,
     units_sold integer NOT NULL,
     inventory integer NOT NULL,
     parent_id integer,
@@ -14,7 +14,7 @@ CREATE TABLE "Sale" (
     product_id integer NOT NULL,
     date date NOT NULL,
     "time" time(0) without time zone NOT NULL,
-    discount numeric(2,0) NOT NULL,
+    discount numeric(12,2) NOT NULL,
     email character varying(256),
     CONSTRAINT "Sale_pkey" PRIMARY KEY (sale_id)
 );
@@ -22,7 +22,7 @@ CREATE TABLE "Sale" (
 CREATE TABLE "Material" (
     material_name character varying NOT NULL,
     product_id integer NOT NULL,
-    material_cost numeric(2,0) NOT NULL,
+    material_cost numeric(12,2) NOT NULL,
     unit_term character varying NOT NULL,
     unit_quantity numeric(4,0) NOT NULL,
     used_quantity numeric(4,0) NOT NULL,

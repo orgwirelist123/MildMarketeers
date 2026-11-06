@@ -34,10 +34,10 @@ public record EditProductRequest(
       throw new IllegalArgumentException("Selling price is required.");
     }
 
-    // Matches the current PostgreSQL numeric(2,0) column.
+    // Matches the current PostgreSQL numeric(12,2) column.
     if (sellPrice.signum() < 0
-        || sellPrice.compareTo(new BigDecimal("99")) > 0
-        || sellPrice.stripTrailingZeros().scale() > 0) {
+        || sellPrice.compareTo(new BigDecimal("9999999999")) > 0
+        || sellPrice.stripTrailingZeros().scale() > 2) {
       throw new IllegalArgumentException(
           "Selling price must be a whole number between 0 and 99.");
     }

@@ -2,8 +2,9 @@ package org.mildmarketeers.controller;
 
 import java.math.BigDecimal;
 import java.sql.SQLException;
-import java.util.Map;
 import java.util.ArrayList;
+import java.util.Map;
+
 import org.example.product.AddProductRequest;
 import org.example.product.EditProductRequest;
 import org.example.product.ProductDetails;
@@ -19,7 +20,6 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import tools.jackson.databind.ObjectMapper;
 
 /** Connects product forms to the product repository. */
 @RestController
@@ -45,8 +45,8 @@ public class ProductController {
 
   /**  */
   @GetMapping ("/list")
-  @ExceptionHandler({SQLException.class, IllegalStateException.class})
-  public ResponseEntity<ArrayList<ProductDetails>> diplayProducts() throws SQLException{
+  // @ExceptionHandler({SQLException.class, IllegalStateException.class})
+  public ResponseEntity<ArrayList<ProductDetails>> displayProducts() throws SQLException{
     ArrayList<ProductDetails> products = repository.retrieveProducts();
     return ResponseEntity.ok(products);
   }
