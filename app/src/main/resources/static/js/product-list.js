@@ -6,17 +6,7 @@
     const refreshButton = document.querySelector('.header-actions [title="Refresh"]');
     // const productGroupTemplate = document.getElementById('template-product-group');
 
-    // Add an event listener to the refresh button.
-    refreshButton.addEventListener("click", (event) => {
-        event.preventDefault();
-        refresh();
-        });
 
-    function refresh()
-    {
-        console.log("refreshing...");
-        displayProducts();
-    }
 
     async function displayProducts(){
         try{
@@ -37,10 +27,15 @@
             //     });
             // })
 
+
+
             const response = await fetch(`/api/products/list`);
             console.log("Retrieved response. Reading response...");
             const products = await readResponse(response);
             console.log("Read response. Outputting...");
+
+            clearDisplay();
+
             products.forEach(product => {
                 console.log(product.name);
                 const productEntry = template.content.cloneNode(true);
@@ -79,6 +74,23 @@
         );
         }
         return result;
+    }
+
+        // Add an event listener to the refresh button.
+    refreshButton.addEventListener("click", (event) => {
+        event.preventDefault();
+        refresh();
+        });
+
+    function refresh()
+    {
+        console.log("refreshing...");
+        displayProducts();
+    }
+
+    function clearDisplay()
+    {
+        productList.innerHTML = "";
     }
     
 })();
