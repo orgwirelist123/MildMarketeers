@@ -1,14 +1,54 @@
 package org.example.product;
 
+import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Optional;
+import java.util.ArrayList;
 import org.example.database.DatabaseConnection;
 
 /** Reads and writes stored product information. */
 public final class ProductRepository {
+
+  /**
+   * Retrieves the product details of all the products in the database.
+   *
+   * @return the product, or an empty result if it does not exist
+   * @throws SQLException if the database query fails
+   */
+  public ArrayList<ProductDetails> retrieveProducts() throws SQLException {
+    String sql =
+        """
+        SELECT product_id, name, sell_price, inventory
+        FROM "Product"
+        """;
+    ArrayList<ProductDetails> products = new ArrayList<ProductDetails>();
+    products.add(new ProductDetails(1, "TestProduct", new BigDecimal(100.00), 5));
+    products.add(new ProductDetails(2, "TestProduct2", new BigDecimal(5.00), 10));
+    // try (Connection connection = DatabaseConnection.open(); PreparedStatement statement = connection.prepareStatement(sql)) {
+    //   statement.setQueryTimeout(5);
+
+    //   try (ResultSet results = statement.executeQuery()) {
+        
+    //     // while(results.next())
+    //     // {
+    //     //   int id = results.getInt("product_id");
+    //     //   String name = results.getString("name");
+    //     //   BigDecimal price = results.getBigDecimal("sell_price");
+    //     //   int inventory = results.getInt("inventory");
+    //     //   products.add(new ProductDetails(id, name, price, inventory));
+    //     // }
+        
+    //     return products;
+    //   }
+    
+    // } catch (Exception e) {
+    //   // TODO: handle exception
+    // }
+    return products;
+  }
 
   /**
    * Retrieves a product's current basic details.
