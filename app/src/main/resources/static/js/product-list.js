@@ -4,51 +4,25 @@
     const productList = document.querySelector('.product-list');
     const template = document.getElementById('template-product');
     const refreshButton = document.querySelector('.header-actions [title="Refresh"]');
-    // const productGroupTemplate = document.getElementById('template-product-group');
 
-
-
-    async function displayProducts(){
+    // Displays all the products in the given array of ProductDetails
+    async function displayProducts(products){
         try{
-            // // Get the products from the ProductController and convert it to a readable array
-            // const response = await fetch(`/api/products/display`).then(response => response.json())
-            // .then(jsArray => { 
-            //     // Go through each ProductDetails item
-            //     jsArray.at(item => {
-            //         console.log("item");
-            //         // // Create a new template instance
-            //         // const product = document.importNode(template.contentEditable, true);
-            //         // // Fill in required data
-            //         // product.elements.namedItem("name").textContent = item.name;
-            //         // product.elements.namedItem("stock").textContent = item.inventory;
-            //         // product.elements.namedItem("price").textContent = item.sellPrice;
-            //         // // Append the new template instance to the product-list
-            //         // productList.appendChild(clone);
-            //     });
-            // })
-
-
-
-            const response = await fetch(`/api/products/list`);
-            console.log("Retrieved response. Reading response...");
-            const products = await readResponse(response);
-            console.log("Read response. Outputting...");
-
+            // Clear the previously displayed products
             clearDisplay();
-
+            // Go through each ProductDetails in the list
             products.forEach(product => {
-                console.log(product.name);
+                // Create a new template instance for this product
                 const productEntry = template.content.cloneNode(true);
-                // const productEntry = document.importNode(template.contentEditable, true);
-                console.log(productEntry);
+
+                // Fill in data to their appropriate positions
                 productEntry.querySelector('.name').textContent = product.name;
                 productEntry.querySelector('.stock').textContent = product.inventory;
                 productEntry.querySelector('.price').textContent = product.sellPrice;
 
-                console.log(productList);
+                // Append the new template instance to the product-list
                 productList.appendChild(productEntry);
             });
-
         } catch (error) {
             console.log(error.message);
         }
@@ -82,10 +56,12 @@
         refresh();
         });
 
-    function refresh()
+    async function refresh()
     {
-        console.log("refreshing...");
-        displayProducts();
+        // Get the products from the ProductController
+        const response = await fetch(`/api/products/list`);
+        const products = await readResponse(response);
+        displayProducts(products);
     }
 
     function clearDisplay()
