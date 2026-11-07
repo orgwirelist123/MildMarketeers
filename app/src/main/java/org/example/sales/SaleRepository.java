@@ -92,15 +92,16 @@ public final class SaleRepository {
                 String updateProductSql =
                     """
                     UPDATE ONLY public."Product"
-                    SET inventory = ?
+                    SET units_sold = ?, inventory = ?
                     WHERE product_id = ?
                     """;
 
                 try (PreparedStatement statement =
                     connection.prepareStatement(updateProductSql)) {
-                    statement.setInt(1, request.inventory() - request.quantity());
-                    statement.setInt(2, request.productId());
-                    statement.setQueryTimeout(5);
+                        statement.setInt(1, request.unitsSold() + request.quantity());
+                        statement.setInt(2, request.inventory() - request.quantity());
+                        statement.setInt(3, request.productId());
+                        statement.setQueryTimeout(5);
 
                     if (statement.executeUpdate() != 1) {
                         throw new SQLException("Could not update the product.");

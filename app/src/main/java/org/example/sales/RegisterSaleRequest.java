@@ -6,12 +6,14 @@ import java.math.BigDecimal;
  * Validated input for registering a sale and updating the product's inventory.
  * 
  * @param productId identifier of the product being sold
+ * @param quantity units of product being sold
  * @param inventory current stock quantity of the product
+ * @param unitsSold current amount of product units sold
  * @param discount discount applied to the sale
  * @param email email of the customer making the purchase
- * @param quantity units of product being sold
+ * 
  */
-public record RegisterSaleRequest(int productId, int quantity, int inventory, BigDecimal discount, String email) {
+public record RegisterSaleRequest(int productId, int quantity, int inventory, int unitsSold, BigDecimal discount, String email) {
 
     /**
      * Validates and normalizes the supplied sale details.
