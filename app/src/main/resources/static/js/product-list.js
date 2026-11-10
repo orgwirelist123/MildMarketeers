@@ -14,11 +14,19 @@
             products.forEach(product => {
                 // Create a new template instance for this product
                 const productEntry = template.content.cloneNode(true);
+                const viewButton = productEntry.querySelector(".btn-view");
+                if (viewButton) {
+                    viewButton.dataset.productId = product.productId;
+                }
 
                 // Fill in data to their appropriate positions
                 productEntry.querySelector('.name').textContent = product.name;
                 productEntry.querySelector('.stock').textContent = product.inventory;
-                productEntry.querySelector('.price').textContent = product.sellPrice;
+                productEntry.querySelector('.price').textContent =
+                    new Intl.NumberFormat("en-US", {
+                        style: "currency",
+                        currency: "USD"
+                    }).format(product.sellPrice);
 
                 // Append the new template instance to the product-list
                 productList.appendChild(productEntry);
@@ -68,5 +76,13 @@
     {
         productList.innerHTML = "";
     }
+
+    // Reload the list after a product is added or edited.
+    document.addEventListener("products:changed", () => {
+        refresh().catch(console.error);
+    });
+
+    // Load saved products when the page first opens.
+    refresh().catch(console.error);
     
 })();

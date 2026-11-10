@@ -23,8 +23,8 @@
   nameInput.maxLength = 50;
   quantityInput.max = "2147483647";
   priceInput.required = true;
-  // priceInput.step = "1";
-  priceInput.max = "9999999999";
+  priceInput.step = "0.01";
+  priceInput.max = "9999999999.99";
 
   // These are the fields currently supported by the backend.
   const supportedInputs = [nameInput, quantityInput, priceInput];
@@ -38,10 +38,9 @@
   });
 
   const note = document.createElement("p");
-  note.textContent =
-    "Currently saves name, quantity, and price. Prices must be whole " +
-    "numbers from 0 to 99. Other product details are not connected yet.";
-  form.prepend(note);
+    note.textContent =
+    "Currently saves name, quantity, and price. Prices can have up to " +
+    "two decimal places. Other product details are not connected yet.";
 
   function updateControls() {
     supportedInputs.forEach((input) => {
@@ -182,10 +181,18 @@
         }
       );
 
-      const result = await readResponse(response);
+      await readResponse(response);
 
-      if (!isEditing) form.reset();
-      message.textContent = result.message;
+      // Close the Add/Edit popup only after the server confirms success.
+      if (panel.matches(":popover-open")) {
+        panel.hidePopover();
+      }
+
+      form.reset();
+      editingId = null;
+      message.textContent = "";
+
+      // success notification will be connected here when ready.
 
       document.dispatchEvent(
         new CustomEvent("products:changed", {

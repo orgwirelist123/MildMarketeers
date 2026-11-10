@@ -53,10 +53,31 @@ public class AddProductRequestTest {
     assertInvalid("Cookie", new BigDecimal("-1"), 1);
   }
 
+    @Test
+  public void acceptsDecimalAndLargerPrices() {
+    for (String value : new String[] {"12.50", "100", "157.98", "12.500"}) {
+      BigDecimal price = new BigDecimal(value);
+      AddProductRequest request =
+          new AddProductRequest("Cookie", price, 1);
+
+      assertEquals(0, price.compareTo(request.sellPrice()));
+    }
+  }
+
   @Test
-  public void rejectsPricesThatCurrentSchemaCannotPreserve() {
-    assertInvalid("Cookie", new BigDecimal("12.50"), 1);
-    assertInvalid("Cookie", new BigDecimal("100"), 1);
+  public void acceptsMaximumPrice() {
+    BigDecimal price = new BigDecimal("9999999999.99");
+    AddProductRequest request =
+        new AddProductRequest("Cookie", price, 1);
+
+    assertEquals(0, price.compareTo(request.sellPrice()));
+  }
+
+  @Test
+  public void rejectsPricesOutsideSupportedRangeOrPrecision() {
+    assertInvalid("Cookie", new BigDecimal("-0.01"), 1);
+    assertInvalid("Cookie", new BigDecimal("12.501"), 1);
+    assertInvalid("Cookie", new BigDecimal("10000000000.00"), 1);
   }
 
   @Test

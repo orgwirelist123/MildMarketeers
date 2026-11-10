@@ -36,10 +36,11 @@ public record EditProductRequest(
 
     // Matches the current PostgreSQL numeric(12,2) column.
     if (sellPrice.signum() < 0
-        || sellPrice.compareTo(new BigDecimal("9999999999")) > 0
+        || sellPrice.compareTo(new BigDecimal("9999999999.99")) > 0
         || sellPrice.stripTrailingZeros().scale() > 2) {
-      throw new IllegalArgumentException(
-          "Selling price must be a whole number between 0 and 99.");
+        throw new IllegalArgumentException(
+          "Selling price must be between 0 and 9999999999.99 "
+              + "with at most two decimal places.");
     }
 
     if (inventory < 0) {
