@@ -195,7 +195,7 @@ public final class ProductRepository {
    * @return true if the product was added, or false if it was not
    * @throws SQLException if adding or recording history fails
    */
-  public boolean update(AddProductRequest request) throws SQLException {
+  public boolean add(AddProductRequest request) throws SQLException {
     java.util.Objects.requireNonNull(request, "Add request is required.");
 
     try (Connection connection = DatabaseConnection.open()) {

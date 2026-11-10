@@ -60,7 +60,7 @@ public class ProductController {
     AddProductRequest request =
         new AddProductRequest(input.name(), input.sellPrice(), input.inventory());
 
-    if (!repository.update(request)) {
+    if (!repository.add(request)) {
       throw new SQLException("The repository did not add the product.");
     }
 
