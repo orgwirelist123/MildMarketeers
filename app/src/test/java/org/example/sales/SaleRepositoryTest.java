@@ -47,7 +47,8 @@ public class SaleRepositoryTest {
 
                 SaleRepository saleRepository = new SaleRepository();
                 ProductRepository prodRepository = new ProductRepository();
-                RegisterSaleRequest request = new RegisterSaleRequest(productId, 5, 20, 5, null, null);
+                RegisterSaleRequest request = new RegisterSaleRequest(productId, 5, 20, 
+                    new BigDecimal("2"), new BigDecimal("2"), new BigDecimal("2"), 0, null);
 
                 assertTrue("The register should succeed.", saleRepository.registerSale(request));
 
@@ -215,7 +216,8 @@ public class SaleRepositoryTest {
                 SaleRepository repository = new SaleRepository();
                 RegisterSaleRequest request =
                     new RegisterSaleRequest(
-                        productId, 5, 20, 5, null, null);
+                        productId, 5, 20, new BigDecimal("2"), new BigDecimal("2"), 
+                        new BigDecimal("2"), 0, null);
 
                 assertEquals(false, repository.registerSale(request));
 
