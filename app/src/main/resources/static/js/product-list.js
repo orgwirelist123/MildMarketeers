@@ -15,6 +15,16 @@
                 // Create a new template instance for this product
                 const productEntry = template.content.cloneNode(true);
 
+                const viewButton = productEntry.querySelector(".btn-view");
+                if (viewButton) {
+                    viewButton.dataset.productId = product.productId;
+                }
+
+                const registerButton = productEntry.querySelector(".btn-sale");
+                if(registerButton) {
+                    registerButton.dataset.productId = product.productId;
+                }
+
                 // Fill in data to their appropriate positions
                 productEntry.querySelector('.name').textContent = product.name;
                 productEntry.querySelector('.stock').textContent = product.inventory;
