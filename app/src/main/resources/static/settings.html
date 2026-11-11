@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Business Manager | Products</title>
+    <title>Business Manager | Settings</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -80,105 +80,6 @@
 
 <!-- Templates -->
 
-<!-- Regular product -->
-<template id="template-product">
-    <li class="product">
-        <div class="row">
-            <span class="thumb"></span>
-            <span class="name"></span>
-            <span class="stock"></span>
-            <span class="price"></span>
-            <div class="tags"></div>
-
-            <div class="actions">
-                <button type="button" class="btn btn-dark btn-sale" popovertarget="panel-register-sale">Register sale</button>
-                <button type="button" class="btn btn-view" popovertarget="panel-product">View</button>
-                <details class="dropdown" name="dropdown">
-                    <summary class="dots"><svg viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="19" r="1.6"/></svg></summary>
-                    <div class="menu">
-                        <button type="button">Duplicate</button>
-                        <button type="button" popovertarget="panel-product">Add subproduct</button>
-                        <button type="button">Archive</button>
-                        <button type="button" class="delete">Delete</button>
-                    </div>
-                </details>
-            </div>
-        </div>
-    </li>
-</template>
-
-<!-- Product with subproducts (no price or register sale button) -->
-<template id="template-product-group">
-    <li class="product product-group">
-        <div class="row">
-            <span class="thumb"></span>
-            <span class="name"></span>
-            <span class="stock"></span>
-            <span class="price"></span>
-            <div class="tags"></div>
-
-            <div class="actions">
-                <span class="btn-sale"></span>
-                <button type="button" class="btn btn-view" popovertarget="panel-product">View</button>
-                <details class="dropdown" name="dropdown">
-                    <summary class="dots"><svg viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="19" r="1.6"/></svg></summary>
-                    <div class="menu">
-                        <button type="button">Duplicate</button>
-                        <button type="button" popovertarget="panel-product">Add subproduct</button>
-                        <button type="button">Archive</button>
-                        <button type="button" class="delete">Delete</button>
-                    </div>
-                </details>
-            </div>
-        </div>
-        <ul class="subproducts"></ul>
-    </li>
-</template>
-
-<!-- Subproduct (goes inside .subproducts) -->
-<template id="template-subproduct">
-    <li class="product">
-        <div class="row row-sub">
-            <span class="thumb"></span>
-            <span class="name"></span>
-            <span class="stock"></span>
-            <span class="price"></span>
-            <div class="tags"></div>
-
-            <div class="actions">
-                <button type="button" class="btn btn-dark btn-sale" popovertarget="panel-register-sale">Register sale</button>
-                <button type="button" class="btn btn-view" popovertarget="panel-product">View</button>
-                <details class="dropdown" name="dropdown">
-                    <summary class="dots"><svg viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="19" r="1.6"/></svg></summary>
-                    <div class="menu">
-                        <button type="button">Duplicate</button>
-                        <button type="button">Archive</button>
-                        <button type="button" class="delete">Delete</button>
-                    </div>
-                </details>
-            </div>
-        </div>
-    </li>
-</template>
-
-<!-- One tag (goes inside .tags or .tag-menu for extra tags) -->
-<template id="template-tag">
-    <span class="tag"></span>
-</template>
-
-<!-- Plus button to see extra tags (goes inside .tags at the end) -->
-<template id="template-tag-more">
-    <details class="dropdown" name="dropdown">
-        <summary class="tag tag-more"></summary>
-        <div class="menu tag-menu"></div>
-    </details>
-</template>
-
-<!-- One tag to sort by (goes inside .tag-sort-list in the sort dropdown) -->
-<template id="template-tag-sort">
-    <button type="button"></button>
-</template>
-
 <!-- One notification (goes inside .notifications) -->
 <template id="template-notification">
     <div class="notification">
@@ -188,30 +89,7 @@
     </div>
 </template>
 
-<!-- One parent product to pick in the subproduct dropdown in the product panel (goes inside .parent-list) -->
-<template id="template-parent-option">
-    <button type="button"></button>
-</template>
-
-<!-- One chosen tag in the product panel (goes inside .tag-field, before .add-tag) -->
-<template id="template-tag-chosen">
-    <span class="tag tag-chosen"><span class="tag-name"></span><button type="button" class="tag-remove" title="Remove tag"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></button></span>
-</template>
-
-<!-- One existing tag to pick in the tag dropdown in the product panel (goes inside .tag-option-list). Add a color class to .tag-dot -->
-<template id="template-tag-option">
-    <button type="button"><span class="tag-dot"></span><span class="tag-name"></span></button>
-</template>
-
-<!-- One component row in the product panel (goes inside .component-list) -->
-<template id="template-component">
-    <li class="component">
-        <input type="text" class="input" placeholder="Component name">
-        <label class="input input-money"><span>$</span><input type="number" min="0" step="0.01" placeholder="0.00"></label>
-        <button type="button" class="close-btn" title="Remove component"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
-    </li>
-</template>
-
+<script src="js/notifications.js"></script>
 <script src="js/product-form.js" defer></script>
 <script src="js/product-list.js" defer></script>
 </body>
