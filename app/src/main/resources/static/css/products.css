@@ -71,6 +71,24 @@
     width: 70px;
 }
 
+/* Archived Row Styling */
+.archived > .row {
+    background: var(--page-top);
+}
+
+.archived > .row > :not(.actions) {
+    opacity: 0.5;
+    filter: grayscale(1);
+}
+
+.archived > .row .btn-sale, .archived > .row .btn-view {
+    visibility: hidden;
+}
+
+.archived > .row .duplicate {
+    display: none;
+}
+
 @media(max-width: 1150px) {
     .list-header, .row {
         grid-template-columns: 44px 1fr 60px 80px 170px 240px;

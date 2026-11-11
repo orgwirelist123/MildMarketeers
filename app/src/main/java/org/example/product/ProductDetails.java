@@ -9,6 +9,7 @@ import java.math.BigDecimal;
  * @param name product name
  * @param sellPrice selling price per unit
  * @param inventory current stock quantity
+ * @param archived if product is archived
  */
 public record ProductDetails(
-    int productId, String name, BigDecimal sellPrice, int inventory) {}
+    int productId, String name, BigDecimal sellPrice, int inventory, boolean archived) {}

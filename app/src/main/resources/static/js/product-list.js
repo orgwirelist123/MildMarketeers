@@ -10,6 +10,7 @@
         try{
             // Clear the previously displayed products
             clearDisplay();
+            console.log(products);
             // Go through each ProductDetails in the list
             products.forEach(product => {
                 // Create a new template instance for this product
@@ -27,6 +28,12 @@
                         style: "currency",
                         currency: "USD"
                     }).format(product.sellPrice);
+
+                if (product.archived) {
+                    // console.log(productEntry.querySelectorAll());
+                    // console.log(productEntry.children);
+                    productEntry.querySelector('.product').classList.add("archived")
+                }
 
                 // Append the new template instance to the product-list
                 productList.appendChild(productEntry);

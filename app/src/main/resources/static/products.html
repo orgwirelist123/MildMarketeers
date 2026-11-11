@@ -543,9 +543,9 @@
                 <details class="dropdown" name="dropdown">
                     <summary class="dots"><svg viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="19" r="1.6"/></svg></summary>
                     <div class="menu">
-                        <button type="button">Duplicate</button>
+                        <button type="button" class="duplicate">Duplicate</button>
                         <button type="button" popovertarget="panel-product">Add subproduct</button>
-                        <button type="button">Archive</button>
+                        <button type="button" class="archive">Archive</button>
                         <button type="button" class="delete">Delete</button>
                     </div>
                 </details>
@@ -570,9 +570,9 @@
                 <details class="dropdown" name="dropdown">
                     <summary class="dots"><svg viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="19" r="1.6"/></svg></summary>
                     <div class="menu">
-                        <button type="button">Duplicate</button>
+                        <button type="button" class="duplicate">Duplicate</button>
                         <button type="button" popovertarget="panel-product">Add subproduct</button>
-                        <button type="button">Archive</button>
+                        <button type="button" class="archive">Archive</button>
                         <button type="button" class="delete">Delete</button>
                     </div>
                 </details>
@@ -598,8 +598,8 @@
                 <details class="dropdown" name="dropdown">
                     <summary class="dots"><svg viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="19" r="1.6"/></svg></summary>
                     <div class="menu">
-                        <button type="button">Duplicate</button>
-                        <button type="button">Archive</button>
+                        <button type="button" class="duplicate">Duplicate</button>
+                        <button type="button" class="archive">Archive</button>
                         <button type="button" class="delete">Delete</button>
                     </div>
                 </details>
@@ -661,5 +661,8 @@
 
 <script src="js/product-form.js" defer></script>
 <script src="js/product-list.js" defer></script>
+<script src="js/products/product-delete.js" type="module" defer></script>
+<script src="js/products/product-archive.js" type="module" defer></script>
+<script src="js/products/product-duplicate.js" type="module" defer></script>
 </body>
 </html>
