@@ -192,7 +192,16 @@
       editingId = null;
       message.textContent = "";
 
-      // success notification will be connected here when ready.
+      // Notification failure must not turn a successful save into a save error.
+      try {
+        sendNotification(
+          isEditing
+            ? "Product successfully updated!"
+            : "Product successfully added!"
+        );
+      } catch (notificationError) {
+        console.error("Could not display the success notification:", notificationError);
+      }
 
       document.dispatchEvent(
         new CustomEvent("products:changed", {
