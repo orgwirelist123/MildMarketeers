@@ -1,5 +1,6 @@
 package org.example.sales;
 
+import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -9,15 +10,16 @@ import org.example.database.DatabaseConnection;
 
 /** Reads and writes sales and corresponding stored product information. */
 public final class SaleRepository {
+
     /**
-     * Records sale registered, time sale is made, and the previous product state.
-     * Updates the product's inventory size accordingly.
+     * Updates product inventory and units sold according to sale made. 
+     * Records previous product state.
      * 
-     * @param request validated sale details
-     * @return true if sale was registered successfully, false if otherwise
+     * @param request validated product changes
+     * @return true if the product was updated, or false if it does not exist
      * @throws SQLException if saving or recording history fails
      */
-    public boolean registerSale(RegisterSaleRequest request) throws SQLException {
+    public boolean updateProduct(RegisterSaleRequest request) throws SQLException {
         java.util.Objects.requireNonNull(request, "Register sale request is required.");
 
         try (Connection connection = DatabaseConnection.open()) {
@@ -33,14 +35,7 @@ public final class SaleRepository {
                     statement.setQueryTimeout(5);
                     statement.execute();
                 }
-
-                try (PreparedStatement statement =
-                    connection.prepareStatement(
-                        "LOCK TABLE public.\"SaleHistory\" IN EXCLUSIVE MODE")) {
-                    statement.setQueryTimeout(5);
-                    statement.execute();
-                }
-
+                
                 // Lock the current product so its saved history matches the state
                 // immediately before this update.
                 try (PreparedStatement statement =
@@ -98,8 +93,8 @@ public final class SaleRepository {
 
                 try (PreparedStatement statement =
                     connection.prepareStatement(updateProductSql)) {
-                        statement.setInt(1, request.unitsSold() + request.quantity());
-                        statement.setInt(2, request.inventory() - request.quantity());
+                        statement.setInt(1, request.pastUnitsSold() + request.soldQuantity());
+                        statement.setInt(2, request.inventory() - request.soldQuantity());
                         statement.setInt(3, request.productId());
                         statement.setQueryTimeout(5);
 
@@ -107,33 +102,85 @@ public final class SaleRepository {
                         throw new SQLException("Could not update the product.");
                     }
                 }
+                connection.commit();
+                return true;
+            } catch (SQLException | RuntimeException exception) {
+                try {
+                    connection.rollback();
+                } catch (SQLException rollbackException) {
+                    exception.addSuppressed(rollbackException);
+                }
+                throw exception;
+            }
+        }
+    }
 
-                int newSaleId = (int) Math.random() * Integer.MAX_VALUE; // Generate a random sale ID.
+    /**
+     * Records sale registered and time sale is made.
+     * 
+     * @param request validated sale details
+     * @return true if sale was registered successfully, false if otherwise
+     * @throws SQLException if saving or recording history fails
+     */
+    public boolean registerSale(RegisterSaleRequest request) throws SQLException {
+        java.util.Objects.requireNonNull(request, "Register sale request is required.");
 
-                // Record sale made in sale history table.
-                String saleHistorySql =
+        try (Connection connection = DatabaseConnection.open()) {
+            connection.setAutoCommit(false);
+
+            try {
+                try (PreparedStatement statement =
+                    connection.prepareStatement(
+                        "LOCK TABLE public.\"SaleHistory\" IN EXCLUSIVE MODE")) {
+                    statement.setQueryTimeout(5);
+                    statement.execute();
+                }
+
+                int newSaleId;
+                boolean inUse = true;
+
+                do{
+                    // Generate a new productId for the new product.
+                    newSaleId = java.util.concurrent.ThreadLocalRandom.current()
+                        .nextInt(1, Integer.MAX_VALUE);
+
+                    // Check to see if a product with the ID exists.
+                    try (PreparedStatement statement =
+                        connection.prepareStatement(
+                            """
+                            SELECT sale_id
+                            FROM ONLY public."Sale"
+                            WHERE sale_id = ?
+                            FOR UPDATE
+                            """)) {
+                        statement.setInt(1, newSaleId);
+                        statement.setQueryTimeout(5);
+
+                        try (ResultSet result = statement.executeQuery()) {
+                            if (!result.next()) {
+                                inUse = false;
+                            }
+                        }
+                    }
+                }while(inUse);                
+
+                // Record sale made in sale table.
+                String saleSql =
                     """
-                    INSERT INTO public."SaleHistory"
-                        (sale_id, product_id, date, time, discount, email, 
-                        change_id, change_date, change_time)
-                    VALUES(?, ?, CURRENT_DATE, LOCALTIMESTAMP(0), ?, ?,
-                        (SELECT COALESCE(MAX(change_id), 0) + 1
-                            FROM ONLY public."SaleHistory"),
-                        CURRENT_DATE, LOCALTIMESTAMP(0))
-                    WHERE NOT EXISTS (
-                        SELECT 1
-                        FROM ONLY public."SaleHistory"
-                        WHERE sale_id = ?
-                    )
+                    INSERT INTO public."Sale"
+                        (sale_id, product_id, date, time, quantity, unit_price, discount, email)
+                    VALUES (?, ?, CURRENT_DATE, LOCALTIMESTAMP(0), ?, ?, ?, ?)
                     """;
 
-                try (PreparedStatement statement =
-                    connection.prepareStatement(saleHistorySql)) {
+                try (PreparedStatement statement = connection.prepareStatement(saleSql)) {
+                    BigDecimal normalTotalPrice = BigDecimal.valueOf(request.soldQuantity()).multiply(request.originalUnitPrice());
+
                     statement.setInt(1, newSaleId);
                     statement.setInt(2, request.productId());
-                    statement.setBigDecimal(3, request.discount());
-                    statement.setString(4, request.email());
-                    statement.setInt(5, newSaleId);
+                    statement.setInt(3, request.soldQuantity());
+                    statement.setBigDecimal(4, request.sellPrice());
+                    statement.setBigDecimal(5, normalTotalPrice.subtract(request.totalPrice()));
+                    statement.setString(6, request.email());
                     statement.setQueryTimeout(5);
 
                     if (statement.executeUpdate() != 1) {
@@ -141,20 +188,24 @@ public final class SaleRepository {
                     }
                 }
 
-                // Record sale made in sale table.
-                String saleSql =
+                // Record sale made in sale history table.
+                String saleHistorySql =
                     """
-                    INSERT INTO public."Sale"
-                        (sale_id, product_id, date, time, discount, email)
-                    SELECT sale_id, product_id, date, time, discount, email
-                    FROM ONLY public."SaleHistory"
+                    INSERT INTO public."SaleHistory"
+                        (sale_id, product_id, date, time, quantity, unit_price, discount, email, 
+                        change_id, change_date, change_time)
+                    SELECT sale_id, product_id, date, time, quantity, unit_price, discount, email,
+                        (SELECT COALESCE(MAX(change_id), 0) + 1
+                        FROM ONLY public."SaleHistory"),
+                        date, time
+                    FROM ONLY public."Sale"
                     WHERE sale_id = ?
                     """;
 
                 try (PreparedStatement statement =
-                    connection.prepareStatement(saleSql)) {
-                    statement.setInt(1, newSaleId);
-                    statement.setQueryTimeout(5);
+                    connection.prepareStatement(saleHistorySql)) {
+                        statement.setInt(1, newSaleId);
+                        statement.setQueryTimeout(5);
 
                     if (statement.executeUpdate() != 1) {
                         throw new SQLException("Could not record the product's previous state.");

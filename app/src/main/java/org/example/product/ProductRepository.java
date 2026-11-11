@@ -22,12 +22,12 @@ public final class ProductRepository {
   public ArrayList<ProductDetails> retrieveProducts() throws SQLException {
     String sql =
         """
-        SELECT product_id, name, sell_price, inventory
-        FROM "Product"
+        SELECT product_id, name, sell_price, inventory, units_sold
+        FROM ONLY "Product"
         """;
     ArrayList<ProductDetails> products = new ArrayList<ProductDetails>();
-    products.add(new ProductDetails(1, "TestProduct", new BigDecimal(100.00), 5));
-    products.add(new ProductDetails(2, "TestProduct2", new BigDecimal(5.00), 10));
+    products.add(new ProductDetails(1, "TestProduct", new BigDecimal(100.00), 5, 0));
+    products.add(new ProductDetails(2, "TestProduct2", new BigDecimal(5.00), 10, 0));
     try (Connection connection = DatabaseConnection.open(); PreparedStatement statement = connection.prepareStatement(sql)) {
       statement.setQueryTimeout(5);
 
@@ -39,7 +39,8 @@ public final class ProductRepository {
           String name = results.getString("name");
           BigDecimal price = results.getBigDecimal("sell_price");
           int inventory = results.getInt("inventory");
-          products.add(new ProductDetails(id, name, price, inventory));
+          int unitsSold = results.getInt("units_sold");
+          products.add(new ProductDetails(id, name, price, inventory, unitsSold));
         }
         
         return products;
@@ -62,7 +63,7 @@ public final class ProductRepository {
   public Optional<ProductDetails> findById(int productId) throws SQLException {
     String sql =
         """
-        SELECT product_id, name, sell_price, inventory
+        SELECT product_id, name, sell_price, inventory, units_sold
         FROM ONLY public."Product"
         WHERE product_id = ?
         """;
@@ -82,7 +83,8 @@ public final class ProductRepository {
                 results.getInt("product_id"),
                 results.getString("name"),
                 results.getBigDecimal("sell_price"),
-                results.getInt("inventory")));
+                results.getInt("inventory"),
+                results.getInt("units_sold")));
       }
     }
   }
