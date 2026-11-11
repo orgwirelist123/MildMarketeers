@@ -1,25 +1,28 @@
 "use strict";
 
-// Notes:
-// 1. Add discount & email field in regsiter sale form UI
 (() => {
-    // Retrieve 'Register Sale' form elements (inventory, quantity, price, total price)
+    // Retrieve HTML 'Register Sale' pop-up form
     const panel = document.querySelector("#panel-register-sale");
     const form = panel.querySelector(".sale-form");
 
+    // Retrieve HTML 'Register Sale' form element fields (name, inventory, quantity, price, total_price)
     const productName = form.querySelector(".sale-product-name");
     const productStock = form.querySelector("#sale-stock-num");
     const quantityInput = form.elements.namedItem("quantity");
     const priceInput = form.elements.namedItem("price");
     const totalPrice = form.querySelector(".sale-total-amount");
+    
+    // Retrieve HTML 'Register Sale' form input fields (quantity_inc, quantity_dec, submit_btn)
+    const inputButtons = form.querySelectorAll('button[type="button"]');
     const submitButtons = form.querySelectorAll('button[type="submit"]');
 
-    const message = document.createElement("p");
-    message.setAttribute("role", "status");
-    form.querySelector(".form-footer").before(message);
-
+    let editingId = null;
     let busy = false;
     let ready = true;
+
+    let inventory = 0;
+    let currentUnitPrice = 0;
+    let pastUnitsSold = 0;
 
     quantityInput.required = true;
     quantityInput.max = "2147483647";
@@ -29,13 +32,18 @@
         button.disabled = true;
     }); 
 
+    // Enables or disables input fields/buttons depending on if 'Register Sale' form is ready or not
     function updateControls() {
-        submitButtons.forEach((button) => {
+        inputButtons.forEach((button) => {
             button.disabled = busy || !ready;
         });
-        addButton.disabled = busy;
+
+        submitButtons.forEach((button) => {
+            button.disabled = busy || !ready;
+        });        
     }
 
+    // Opens 'Register Sale' form
     function showPanel() {
         if (!panel.matches(":popover-open")) panel.showPopover();
     }
@@ -62,6 +70,7 @@
         return result;
     }
 
+    // Opens 'Sale Register' form and updates form details to match the selected product's details
     async function openRegister(productId) {
         if (busy) return;
 
@@ -69,38 +78,43 @@
         const rawId = String(productId ?? "").trim();
         const id = Number(rawId);
 
-        if (!/^-?\d+$/.test(rawId) ||
-            !Number.isInteger(id) ||
-            id < -2147483648 ||
-            id > 2147483647) {
-                ready = false;
+        if (!/^-?\d+$/.test(rawId) || !Number.isInteger(id) ||
+            id < -2147483648 || id > 2147483647) {
                 editingId = null;
+                ready = false;
                 form.reset();
-                message.textContent = "This product row needs a valid product ID.";
                 updateControls();
                 showPanel();
+
                 return;
         }
 
+        editingId = id;
         ready = false;
         busy = true;
+        
         form.reset();
         updateControls();
         showPanel();
 
         try {
-            // const response = await fetch(`/api/sales/${id}`);
-            // const product = await readResponse(response);
+            const response = await fetch(`/api/products/${id}`);
+            const product = await readResponse(response);
 
-            productStock.textContent = 200;
+            productName.textContent = product.name;
+            productStock.textContent = product.inventory;
+            priceInput.value = product.sellPrice;
 
-            quantityInput.value = 10;
-            priceInput.value = 90;
+            const totalPriceNum = Number(priceInput.value) * Number(quantityInput.value);
+            totalPrice.textContent = totalPriceNum.toFixed(2);
 
+            inventory = product.inventory;
+            currentUnitPrice = product.sellPrice;
+            pastUnitsSold = product.unitsSold;
+            
             ready = true;
-            message.textContent = "";
         } catch (error) {
-            message.textContent = error.message || "Could not load the product.";
+            console.log(error.message);
         } finally {
             busy = false;
             updateControls();
@@ -119,70 +133,91 @@
         openRegister(button.dataset.productId ?? row?.dataset.productId);
     });
 
+    // Increases or decreases quantity by 1 by clicking quantity buttons
+    form.addEventListener("click", (event) => {
+        const button = event.target.closest(".quantity-btn");
+
+        if(!button) return;
+
+        event.preventDefault();
+
+        const numQuantity = Number(quantityInput.value);
+
+        if(button.title === "Increase" && numQuantity < Number(productStock.textContent)) {
+            quantityInput.value = numQuantity + 1;
+        }
+        else if (button.title === "Decrease" && numQuantity > 1) {
+            quantityInput.value = numQuantity - 1;
+        }      
+
+        updateTotalPrice();
+    });
+
+    form.addEventListener("input", (event) => {
+        event.preventDefault();
+        updateTotalPrice();        
+    });
+
+    // Saves the 'Sale' registered and edits product accordingly
     form.addEventListener("submit", async (event) => {
         event.preventDefault();
 
         if (busy || !ready || !form.reportValidity()) return;
 
         const id = editingId;
-        const isEditing = id !== null;
+        const isRegistering = id !== null;
         const payload = {
-            name: nameInput.value.trim(),
+            soldQuantity: Number(quantityInput.value),
+            inventory: Number(inventory),
+            originalUnitPrice: currentUnitPrice, 
             sellPrice: priceInput.value,
-            inventory: Number(quantityInput.value)
+            totalPrice: Number(totalPrice.textContent),
+            pastUnitsSold: pastUnitsSold, 
+            email: null // Change to take email input when it's added
         };
 
         busy = true;
-        message.textContent = "Registering sale…";
         updateControls();
 
         try {
-            const response = await fetch(
-                isEditing ? `/api/products/${id}` : "/api/products",
+            if(!isRegistering) return;
+
+            const saleResponse = await fetch(
+                `/api/sales/${id}`,
                 {
-                    method: isEditing ? "PUT" : "POST",
+                    method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify(payload)
                 }
             );
 
-            const result = await readResponse(response);
+            const saleResult = await readResponse(saleResponse);
 
-            if (!isEditing) form.reset();
-            message.textContent = result.message;
-
-            document.dispatchEvent(
-                new CustomEvent("products:changed", {
-                    detail: {
-                        action: isEditing ? "updated" : "added",
-                        productId: id
-                    }
-                })
+            const productResponse = await fetch(
+                `/api/sales/update/${id}`,
+                {
+                    method: "PUT",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload)
+                }
             );
+
+            const productResult = await readResponse(productResponse); 
+
         } catch (error) {
-            // Preserve entries after an unsuccessful save.
-            message.textContent = error.message || "Could not reach the server.";
+            console.log(error.message);
         } finally {
             busy = false;
+            panel.hidePopover();
+            form.reset();
+            refresh();
             updateControls();
         }
     });
 
-    // Get the products details from the ProductController
-    async function getProductDetails(productId) {     
-        // Accept IDs supplied by a product row or another page component.
-        const rawId = String(productId ?? "").trim();
-        const id = Number(rawId);
-
-        try {
-            const response = await fetch(`/api/products/${id}`);
-            const products = await readResponse(response);
-        } catch (error) {
-            message.textContent = error.message || "Could not load the product.";
-        } finally {
-            busy = false;
-            updateControls();
-        }
-        
+    // Updates total price displayed to match price * quantity
+    function updateTotalPrice() {
+        const totalPriceUpdate = Number(priceInput.value) * Number(quantityInput.value);
+        totalPrice.textContent = totalPriceUpdate.toFixed(2);
     }
 })();
