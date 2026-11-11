@@ -14,6 +14,8 @@ CREATE TABLE "Sale" (
     product_id integer NOT NULL,
     date date NOT NULL,
     "time" time(0) without time zone NOT NULL,
+    quantity integer NOT NULL,
+    unit_price numeric(12,2) NOT NULL,
     discount numeric(12,2) NOT NULL,
     email character varying(256),
     CONSTRAINT "Sale_pkey" PRIMARY KEY (sale_id)
