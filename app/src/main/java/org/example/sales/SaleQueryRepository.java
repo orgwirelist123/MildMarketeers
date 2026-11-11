@@ -15,9 +15,11 @@ public final class SaleQueryRepository {
 
   /** Retrieves sales with their current product names, newest first. */
   public List<SaleDetails> findAll() throws SQLException {
+    // Stored unit_price already includes the discount applied during registration.
     String sql =
         """
-        SELECT s.sale_id, s.product_id, p.name AS product_name, s.date, s.time
+        SELECT s.sale_id, s.product_id, p.name AS product_name, s.date, s.time,
+               s.quantity, s.quantity * s.unit_price AS total
         FROM ONLY public."Sale" AS s
         LEFT JOIN ONLY public."Product" AS p
           ON p.product_id = s.product_id
@@ -43,7 +45,9 @@ public final class SaleQueryRepository {
                   result.getInt("product_id"),
                   productName,
                   result.getObject("date", LocalDate.class),
-                  result.getObject("time", LocalTime.class)));
+                  result.getObject("time", LocalTime.class),
+                  result.getInt("quantity"),
+                  result.getBigDecimal("total").toPlainString()));
         }
       }
     }

@@ -9,4 +9,6 @@ public record SaleDetails(
     int productId,
     String productName,
     LocalDate date,
-    LocalTime time) {}
+    LocalTime time,
+    int quantity,
+    String total) {}

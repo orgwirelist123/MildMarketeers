@@ -37,6 +37,19 @@
     year: "numeric"
   });
 
+    // Keep money exact, including totals larger than JavaScript's safe integer range.
+  function totalInCents(value) {
+    const [whole, fraction = ""] = value.split(".");
+    return BigInt(whole) * 100n + BigInt(fraction.padEnd(2, "0"));
+  }
+
+  function formatMoney(value) {
+    const cents = totalInCents(value);
+    const dollars = (cents / 100n).toLocaleString("en-US");
+    const remainder = String(cents % 100n).padStart(2, "0");
+    return `$${dollars}.${remainder}`;
+  }
+
   function formatDate(value) {
     // Parse as a local calendar date to avoid a timezone date shift.
     const [year, month, day] = value.split("-").map(Number);
@@ -53,14 +66,11 @@
   }
 
   // Total sorting becomes available once sale totals are stored.
-  sortButtons.forEach((button) => {
-    const label = button.textContent.trim();
+    sortButtons.forEach((button) => {
+      const label = button.textContent.trim();
 
-    if (label === "Highest total" || label === "Lowest total") {
-      button.disabled = true;
-      button.title = "Sale totals are not available yet.";
-      return;
-    }
+      button.disabled = false;
+      button.removeAttribute("title");
 
     button.addEventListener("click", () => {
       sortOrder = label;
@@ -86,10 +96,21 @@
     filtered.sort((first, second) => {
       const firstDate = `${first.date}T${first.time}`;
       const secondDate = `${second.date}T${second.time}`;
-      const comparison =
+      const dateComparison =
         firstDate.localeCompare(secondDate) || first.saleId - second.saleId;
 
-      return sortOrder === "Oldest" ? comparison : -comparison;
+      if (sortOrder === "Highest total" || sortOrder === "Lowest total") {
+        const firstTotal = totalInCents(first.total);
+        const secondTotal = totalInCents(second.total);
+        const comparison =
+          firstTotal < secondTotal ? -1 : firstTotal > secondTotal ? 1 : 0;
+
+        // Equal totals are ordered newest first.
+        return (sortOrder === "Lowest total" ? comparison : -comparison)
+          || -dateComparison;
+      }
+
+      return sortOrder === "Oldest" ? dateComparison : -dateComparison;
     });
 
     const fragment = document.createDocumentFragment();
@@ -100,12 +121,14 @@
       entry.querySelector(".sales-date").textContent = formatDate(sale.date);
       entry.querySelector(".sales-product-name").textContent = sale.productName;
 
-      // Do not invent quantities or calculate totals using today's price.
-      entry.querySelector(".sales-quantity").textContent = "";
+      const quantity = entry.querySelector(".sales-quantity");
+      quantity.textContent = `× ${sale.quantity}`;
+      quantity.setAttribute("aria-label", `${sale.quantity} units sold`);
+
       const total = entry.querySelector(".sales-total");
-      total.textContent = "—";
-      total.setAttribute("aria-label", "Total unavailable");
-      total.title = "Quantity and price at the time of sale are not stored yet.";
+      total.textContent = formatMoney(sale.total);
+      total.setAttribute("aria-label", `Sale total ${formatMoney(sale.total)}`);
+      total.removeAttribute("title");
 
       fragment.appendChild(entry);
     });
@@ -155,7 +178,11 @@
         typeof sale.productName === "string" &&
         typeof sale.date === "string" &&
         /^\d{4}-\d{2}-\d{2}$/.test(sale.date) &&
-        typeof sale.time === "string"
+        typeof sale.time === "string" &&
+        Number.isInteger(sale.quantity) &&
+        sale.quantity > 0 &&
+        typeof sale.total === "string" &&
+        /^\d+(\.\d{1,2})?$/.test(sale.total)
       )) {
         throw new Error("The server returned an unexpected sales response.");
       }
