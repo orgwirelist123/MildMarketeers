@@ -1,223 +1,228 @@
 "use strict";
 
 (() => {
-    // Retrieve HTML 'Register Sale' pop-up form
-    const panel = document.querySelector("#panel-register-sale");
-    const form = panel.querySelector(".sale-form");
+  const panel = document.querySelector("#panel-register-sale");
+  const form = panel.querySelector(".sale-form");
+  const productName = form.querySelector(".sale-product-name");
+  const productStock = form.querySelector("#sale-stock-num");
+  const quantityInput = form.elements.namedItem("quantity");
+  const priceInput = form.elements.namedItem("price");
+  const discountInput = form.elements.namedItem("discount");
+  const totalPrice = form.querySelector(".sale-total-amount");
+  const submitButton = form.querySelector('button[type="submit"]');
+  const controls = [...form.querySelectorAll("input, button")];
 
-    // Retrieve HTML 'Register Sale' form element fields (name, inventory, quantity, price, total_price)
-    const productName = form.querySelector(".sale-product-name");
-    const productStock = form.querySelector("#sale-stock-num");
-    const quantityInput = form.elements.namedItem("quantity");
-    const priceInput = form.elements.namedItem("price");
-    const totalPrice = form.querySelector(".sale-total-amount");
-    
-    // Retrieve HTML 'Register Sale' form input fields (quantity_inc, quantity_dec, submit_btn)
-    const inputButtons = form.querySelectorAll('button[type="button"]');
-    const submitButtons = form.querySelectorAll('button[type="submit"]');
+  const message = document.createElement("p");
+  message.setAttribute("role", "status");
+  message.setAttribute("aria-live", "polite");
+  submitButton.before(message);
 
-    let editingId = null;
-    let busy = false;
-    let ready = true;
+  let productId = null;
+  let stock = 0;
+  let busy = false;
+  let ready = false;
 
-    let inventory = 0;
-    let currentUnitPrice = 0;
-    let pastUnitsSold = 0;
+  priceInput.max = "9999999999.99";
+  priceInput.setAttribute("aria-label", "Price per unit before discount");
+  quantityInput.required = true;
 
-    quantityInput.required = true;
-    quantityInput.max = "2147483647";
-    priceInput.max = "9999999999";
+  // Use integer cents to avoid floating-point rounding.
+  function cents(value) {
+    if (!/^\d+(\.\d{1,2})?$/.test(value)) return null;
+    const [whole, fraction = ""] = value.split(".");
+    return BigInt(whole) * 100n + BigInt(fraction.padEnd(2, "0"));
+  }
 
-    form.querySelectorAll('button[type="button"]').forEach((button) => {
-        button.disabled = true;
-    }); 
+  function decimal(value) {
+    return `${value / 100n}.${String(value % 100n).padStart(2, "0")}`;
+  }
 
-    // Enables or disables input fields/buttons depending on if 'Register Sale' form is ready or not
-    function updateControls() {
-        inputButtons.forEach((button) => {
-            button.disabled = busy || !ready;
-        });
-
-        submitButtons.forEach((button) => {
-            button.disabled = busy || !ready;
-        });        
-    }
-
-    // Opens 'Register Sale' form
-    function showPanel() {
-        if (!panel.matches(":popover-open")) panel.showPopover();
-    }
-
-    async function readResponse(response) {
-        const text = await response.text();
-        let result = {};
-
-        try {
-            result = text ? JSON.parse(text) : {};
-        } catch {
-            throw new Error("The server returned an unexpected response.");
-        }
-
-        if (!response.ok) {
-            throw new Error(
-                result.message ||
-                (response.status === 404
-                ? "This product no longer exists."
-                : "Could not complete the request.")
-            );
-        }
-
-        return result;
-    }
-
-    // Opens 'Sale Register' form and updates form details to match the selected product's details
-    async function openRegister(productId) {
-        if (busy) return;
-
-        // Accept IDs supplied by a product row or another page component.
-        const rawId = String(productId ?? "").trim();
-        const id = Number(rawId);
-
-        if (!/^-?\d+$/.test(rawId) || !Number.isInteger(id) ||
-            id < -2147483648 || id > 2147483647) {
-                editingId = null;
-                ready = false;
-                form.reset();
-                updateControls();
-                showPanel();
-
-                return;
-        }
-
-        editingId = id;
-        ready = false;
-        busy = true;
-        
-        form.reset();
-        updateControls();
-        showPanel();
-
-        try {
-            const response = await fetch(`/api/products/${id}`);
-            const product = await readResponse(response);
-
-            productName.textContent = product.name;
-            productStock.textContent = product.inventory;
-            priceInput.value = product.sellPrice;
-
-            const totalPriceNum = Number(priceInput.value) * Number(quantityInput.value);
-            totalPrice.textContent = totalPriceNum.toFixed(2);
-
-            inventory = product.inventory;
-            currentUnitPrice = product.sellPrice;
-            pastUnitsSold = product.unitsSold;
-            
-            ready = true;
-        } catch (error) {
-            console.log(error.message);
-        } finally {
-            busy = false;
-            updateControls();
-        }
-    }
-
-    // Opens 'Register Sale' form with corresponding details of selected product
-    // Works with rows added later by the Products Page integration.
-    document.addEventListener("click", (event) => {
-        const button = event.target.closest(".btn-sale");
-        if (!button) return;
-
-        event.preventDefault();
-
-        const row = button.closest("[data-product-id]");
-        openRegister(button.dataset.productId ?? row?.dataset.productId);
+  function updateControls() {
+    controls.forEach((control) => {
+      control.disabled = busy || !ready;
     });
+  }
 
-    // Increases or decreases quantity by 1 by clicking quantity buttons
-    form.addEventListener("click", (event) => {
-        const button = event.target.closest(".quantity-btn");
+  function updateTotal() {
+    discountInput.setCustomValidity("");
 
-        if(!button) return;
+    const quantity = Number(quantityInput.value);
+    const price = cents(priceInput.value);
+    const discount = cents(discountInput.value);
 
-        event.preventDefault();
-
-        const numQuantity = Number(quantityInput.value);
-
-        if(button.title === "Increase" && numQuantity < Number(productStock.textContent)) {
-            quantityInput.value = numQuantity + 1;
-        }
-        else if (button.title === "Decrease" && numQuantity > 1) {
-            quantityInput.value = numQuantity - 1;
-        }      
-
-        updateTotalPrice();
-    });
-
-    form.addEventListener("input", (event) => {
-        event.preventDefault();
-        updateTotalPrice();        
-    });
-
-    // Saves the 'Sale' registered and edits product accordingly
-    form.addEventListener("submit", async (event) => {
-        event.preventDefault();
-
-        if (busy || !ready || !form.reportValidity()) return;
-
-        const id = editingId;
-        const isRegistering = id !== null;
-        const payload = {
-            soldQuantity: Number(quantityInput.value),
-            inventory: Number(inventory),
-            originalUnitPrice: currentUnitPrice, 
-            sellPrice: priceInput.value,
-            totalPrice: Number(totalPrice.textContent),
-            pastUnitsSold: pastUnitsSold, 
-            email: null // Change to take email input when it's added
-        };
-
-        busy = true;
-        updateControls();
-
-        try {
-            if(!isRegistering) return;
-
-            const saleResponse = await fetch(
-                `/api/sales/${id}`,
-                {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(payload)
-                }
-            );
-
-            const saleResult = await readResponse(saleResponse);
-
-            const productResponse = await fetch(
-                `/api/sales/update/${id}`,
-                {
-                    method: "PUT",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(payload)
-                }
-            );
-
-            const productResult = await readResponse(productResponse); 
-
-        } catch (error) {
-            console.log(error.message);
-        } finally {
-            busy = false;
-            panel.hidePopover();
-            form.reset();
-            refresh();
-            updateControls();
-        }
-    });
-
-    // Updates total price displayed to match price * quantity
-    function updateTotalPrice() {
-        const totalPriceUpdate = Number(priceInput.value) * Number(quantityInput.value);
-        totalPrice.textContent = totalPriceUpdate.toFixed(2);
+    if (!Number.isInteger(quantity) || quantity < 1 ||
+        quantity > 2147483647 || price === null || discount === null) {
+      totalPrice.textContent = "—";
+      return;
     }
+
+    const subtotal = BigInt(quantity) * price;
+    if (discount > subtotal) {
+      discountInput.setCustomValidity("Discount cannot exceed the sale subtotal.");
+      totalPrice.textContent = "—";
+      return;
+    }
+
+    totalPrice.textContent = decimal(subtotal - discount);
+  }
+
+  async function readResponse(response) {
+    const text = await response.text();
+    let result;
+
+    try {
+      result = text ? JSON.parse(text) : {};
+    } catch {
+      throw new Error("The server returned an unexpected response.");
+    }
+
+    if (!response.ok) {
+      throw new Error(result.message || "Could not complete the request.");
+    }
+
+    return result;
+  }
+
+  async function openRegister(rawId) {
+    if (busy) return;
+
+    const value = String(rawId ?? "").trim();
+    const id = Number(value);
+
+    form.reset();
+    discountInput.setCustomValidity("");
+    ready = false;
+    productId = null;
+    productName.textContent = "";
+    productStock.textContent = "—";
+    totalPrice.textContent = "—";
+    message.textContent = "";
+    updateControls();
+
+    if (!panel.matches(":popover-open")) panel.showPopover();
+
+    if (!/^-?\d+$/.test(value) || !Number.isInteger(id) ||
+        id < -2147483648 || id > 2147483647) {
+      message.textContent = "This product row needs a valid product ID.";
+      return;
+    }
+
+    busy = true;
+    message.textContent = "Loading product…";
+    updateControls();
+
+    try {
+      const response = await fetch(`/api/products/${id}`, { cache: "no-store" });
+      const product = await readResponse(response);
+
+      if (!Number.isInteger(product.inventory) || product.inventory < 0 ||
+          cents(String(product.sellPrice)) === null) {
+        throw new Error("The server returned invalid product details.");
+      }
+
+      productId = id;
+      stock = product.inventory;
+      productName.textContent = product.name;
+      productStock.textContent = stock;
+      quantityInput.max = String(stock);
+      quantityInput.value = "1";
+      priceInput.value = product.sellPrice;
+      discountInput.value = "0.00";
+
+      ready = stock > 0;
+      message.textContent = ready ? "" : "This product is out of stock.";
+      updateTotal();
+    } catch (error) {
+      message.textContent = error.message || "Could not load the product.";
+    } finally {
+      busy = false;
+      updateControls();
+    }
+  }
+
+  document.addEventListener("click", (event) => {
+    const button = event.target.closest(".btn-sale");
+    if (!button) return;
+
+    event.preventDefault();
+    const row = button.closest("[data-product-id]");
+    openRegister(button.dataset.productId ?? row?.dataset.productId);
+  });
+
+  form.addEventListener("click", (event) => {
+    const button = event.target.closest(".quantity-btn");
+    if (!button || busy || !ready) return;
+
+    event.preventDefault();
+    const quantity = Number(quantityInput.value);
+    if (!Number.isInteger(quantity)) return;
+
+    if (button.title === "Increase" && quantity < stock) {
+      quantityInput.value = quantity + 1;
+    } else if (button.title === "Decrease" && quantity > 1) {
+      quantityInput.value = quantity - 1;
+    }
+
+    updateTotal();
+  });
+
+  form.addEventListener("input", updateTotal);
+
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    if (busy || !ready || productId === null) return;
+
+    updateTotal();
+    if (!form.reportValidity()) return;
+
+    const payload = {
+      quantity: Number(quantityInput.value),
+      unitPrice: priceInput.value,
+      discount: discountInput.value,
+      email: null
+    };
+
+    busy = true;
+    message.textContent = "Registering sale…";
+    updateControls();
+
+    try {
+      const response = await fetch(`/api/sales/${productId}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+
+      await readResponse(response);
+    } catch (error) {
+      // Preserve entered values when saving fails.
+      message.textContent =
+        `${error.message || "Could not reach the server."} ` +
+        "If the result is uncertain, check Sales before submitting again.";
+      busy = false;
+      updateControls();
+      return;
+    }
+
+    // Saving has succeeded; UI notification errors must not imply save failure.
+    busy = false;
+    ready = false;
+    updateControls();
+    if (panel.matches(":popover-open")) panel.hidePopover();
+    form.reset();
+    message.textContent = "";
+
+    document.dispatchEvent(new CustomEvent("products:changed"));
+    document.dispatchEvent(new CustomEvent("sales:changed"));
+
+    try {
+      if (typeof sendNotification === "function") {
+        sendNotification("Sale registered successfully!");
+      }
+    } catch (error) {
+      console.error("Could not display sale notification:", error);
+    }
+  });
+
+  updateControls();
 })();

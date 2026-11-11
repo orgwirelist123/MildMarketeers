@@ -15,11 +15,11 @@ public final class SaleQueryRepository {
 
   /** Retrieves sales with their current product names, newest first. */
   public List<SaleDetails> findAll() throws SQLException {
-    // Stored unit_price already includes the discount applied during registration.
+    // Stored unit_price is before discount; subtract the whole-sale discount once.
     String sql =
         """
         SELECT s.sale_id, s.product_id, p.name AS product_name, s.date, s.time,
-               s.quantity, s.quantity * s.unit_price AS total
+              s.quantity, s.quantity * s.unit_price - s.discount AS total
         FROM ONLY public."Sale" AS s
         LEFT JOIN ONLY public."Product" AS p
           ON p.product_id = s.product_id

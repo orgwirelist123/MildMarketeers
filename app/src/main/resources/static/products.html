@@ -508,6 +508,18 @@
                     <span class="field-label">Price per unit</span>
                     <label class="input input-money price-input"><span>$</span><input type="number" name="price" min="0" step="0.01" placeholder="0.00" required></label>
                 </div>
+                                    <!-- One dollar discount for the entire sale -->
+                <div class="field">
+                    <label class="field-label" for="sale-discount">
+                        Discount for entire sale
+                    </label>
+                    <div class="input input-money">
+                        <span>$</span>
+                        <input id="sale-discount" type="number"
+                               name="discount" min="0" step="0.01"
+                               max="9999999999.99" value="0.00" required>
+                    </div>
+                </div>
 
                 <!-- Total -->
                 <div class="sale-total">
