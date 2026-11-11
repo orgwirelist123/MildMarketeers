@@ -704,3 +704,11 @@ svg {
         padding: 10px 0;
     }
 }
+/* Notification dismissal animation used by notifications.js. */
+.notification.hiding {
+    animation: notification-out 0.2s ease-in forwards;
+}
+
+@keyframes notification-out {
+    to { transform: translateY(20px); opacity: 0; }
+}
