@@ -1,0 +1,185 @@
+/* Date range */
+.date-range {
+    cursor: pointer;
+}
+
+.date-range input {
+    width: 220px;
+    border: none;
+    outline: none;
+    background: transparent;
+    font: inherit;
+    color: inherit;
+    cursor: pointer;
+}
+
+.date-range svg:last-child {
+    color: var(--text-secondary);
+}
+
+/* Stats */
+.stat-card {
+    background: var(--background);
+}
+
+.summary-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+    align-items: start;
+    gap: 16px;
+}
+
+.summary-card {
+    padding: 18px 20px;
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    background: var(--background);
+}
+
+.summary-heading {
+    margin: 0 0 10px;
+    font-size: 1rem;
+}
+
+.summary-graphs {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.summary-graphs .graph {
+    height: 120px;
+}
+
+/* Top products */
+.top-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 6px;
+}
+
+.top-header .summary-heading {
+    margin: 0;
+    text-align: center;
+}
+
+.top-arrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 32px;
+    height: 32px;
+    border: 1px solid var(--border);
+    border-radius: 50%;
+}
+
+.top-arrow svg {
+    width: 16px;
+    height: 16px;
+}
+
+.top-arrow:hover {
+    background: var(--accent-light);
+    border-color: var(--primary-hover);
+}
+
+.top-arrow:active {
+    transform: scale(0.9);
+}
+
+.top-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.top-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 4px;
+    border-bottom: 1px solid var(--border);
+}
+
+.top-item:last-child {
+    border-bottom: none;
+}
+
+.top-rank {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--accent-light);
+    color: var(--primary-hover);
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+
+.top-name {
+    flex: 1;
+    min-width: 0;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.top-value {
+    color: var(--text-secondary);
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+/* Flatpickr Calendar */
+.flatpickr-calendar {
+    font-family: inherit;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+}
+
+/* Removes the pointer arrow on the calendar */
+.flatpickr-calendar::before, .flatpickr-calendar::after {
+    display: none;
+}
+
+.flatpickr-calendar .flatpickr-day:hover {
+    background: var(--accent-light);
+    border-color: var(--accent-light);
+    color: var(--text);
+}
+
+.flatpickr-calendar .flatpickr-day.today {
+    border-color: var(--accent);
+}
+
+.flatpickr-calendar .flatpickr-day.inRange {
+    background: var(--accent-light);
+    border-color: var(--accent-light);
+    box-shadow: -5px 0 0 var(--accent-light), 5px 0 0 var(--accent-light);
+}
+
+.flatpickr-calendar .flatpickr-day.selected,
+.flatpickr-calendar .flatpickr-day.startRange,
+.flatpickr-calendar .flatpickr-day.endRange {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: white;
+}
+
+/* Fills the gap between the start and end dates when they're next to each other */
+.flatpickr-calendar .flatpickr-day.startRange + .endRange:not(:nth-child(7n+1)) {
+    box-shadow: -10px 0 0 var(--primary);
+}
+
+.flatpickr-calendar .flatpickr-prev-month:hover svg,
+.flatpickr-calendar .flatpickr-next-month:hover svg {
+    fill: var(--primary-hover);
+}
