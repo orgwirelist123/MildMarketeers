@@ -1,0 +1,4 @@
+BEGIN;
+ALTER TABLE public."Product"
+    ADD COLUMN IF NOT EXISTS archived boolean NOT NULL DEFAULT FALSE;
+COMMIT;

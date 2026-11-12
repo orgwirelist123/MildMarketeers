@@ -165,6 +165,36 @@ public class WholeSaleRepositoryTest {
     assertNoSaleOrHistory();
   }
 
+  @Test
+  public void rejectsArchivedProductWithoutWritingRecords() throws Exception {
+    try (PreparedStatement statement = prepare("""
+        UPDATE ONLY public."Product"
+        SET archived = TRUE
+        WHERE product_id = ?
+        """)) {
+      assertEquals(1, statement.executeUpdate());
+    }
+
+    IllegalArgumentException error = assertThrows(
+        IllegalArgumentException.class,
+        () -> repository.register(request(2, "1.00", null)));
+
+    assertEquals(
+        "Cannot register a sale for an archived product.", error.getMessage());
+    assertProduct(10, 5);
+    assertNoSaleOrHistory();
+
+    try (PreparedStatement statement = prepare("""
+        SELECT archived
+        FROM ONLY public."Product"
+        WHERE product_id = ?
+        """);
+        var result = statement.executeQuery()) {
+      assertTrue(result.next());
+      assertTrue(result.getBoolean("archived"));
+    }
+  }
+
   private WholeSaleRequest request(int quantity, String discount, String email) {
     return new WholeSaleRequest(
         productId, quantity, new BigDecimal("10.00"),

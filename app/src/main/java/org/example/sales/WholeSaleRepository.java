@@ -33,7 +33,7 @@ public final class WholeSaleRepository {
         int unitsSold;
 
         try (PreparedStatement statement = prepare(connection, """
-            SELECT inventory, units_sold
+            SELECT inventory, units_sold, archived
             FROM ONLY public."Product"
             WHERE product_id = ?
             FOR UPDATE
@@ -44,6 +44,11 @@ public final class WholeSaleRepository {
             if (!result.next()) {
               connection.rollback();
               return false;
+            }
+
+            if (result.getBoolean("archived")) {
+              throw new IllegalArgumentException(
+                  "Cannot register a sale for an archived product.");
             }
 
             inventory = result.getInt("inventory");
@@ -65,9 +70,9 @@ public final class WholeSaleRepository {
         try (PreparedStatement statement = prepare(connection, """
             INSERT INTO public."ProductHistory"
                 (product_id, name, sell_price, units_sold, inventory,
-                 parent_id, change_id, change_date, change_time)
+                 parent_id, archived, change_id, change_date, change_time)
             SELECT product_id, name, sell_price, units_sold, inventory,
-                   parent_id,
+                   parent_id, archived,
                    (SELECT COALESCE(MAX(change_id), 0) + 1
                     FROM ONLY public."ProductHistory"),
                    CURRENT_DATE, LOCALTIMESTAMP(0)

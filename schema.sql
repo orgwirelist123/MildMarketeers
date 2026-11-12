@@ -6,6 +6,7 @@ CREATE TABLE "Product" (
     units_sold integer NOT NULL,
     inventory integer NOT NULL,
     parent_id integer,
+    archived boolean DEFAULT FALSE,
     CONSTRAINT "Product_pkey" PRIMARY KEY (product_id)
 );
 
