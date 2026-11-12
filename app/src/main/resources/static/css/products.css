@@ -112,50 +112,10 @@
     border-bottom: 1px solid var(--border);
 }
 
-.stat-cards {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 10px;
-    margin-bottom: 20px;
-}
-
-.stat-card {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    padding: 12px 14px;
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    background: var(--page-top);
-}
-
-.stat-label {
-    color: var(--text-secondary);
-    font-size: 0.8rem;
-}
-
-.stat-value {
-    font-size: 1.3rem;
-    font-weight: 700;
-    overflow-wrap: anywhere;
-}
-
 .graph-buttons {
     display: flex;
     gap: 8px;
     margin-bottom: 10px;
-}
-
-.graph {
-    height: 150px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border: 1.5px dashed var(--sidebar-text);
-    border-radius: 16px;
-    background: var(--page-top);
-    color: var(--text-secondary);
-    font-weight: 600;
 }
 
 .product-form {
