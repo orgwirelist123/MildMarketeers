@@ -24,12 +24,12 @@ public final class ProductRepository {
         """
         SELECT product_id, name, sell_price, inventory, units_sold, archived
         FROM ONLY public."Product"
-        WHERE LOWER(name) LIKE LOWER("%?%")
+        WHERE name LIKE ?
         """;
     
     ArrayList<ProductDetails> products = new ArrayList<ProductDetails>();
     try (Connection connection = DatabaseConnection.open(); PreparedStatement statement = connection.prepareStatement(sql)) {
-      statement.setString(1, query);
+      statement.setString(1, "%" + query + "%");
       statement.setQueryTimeout(5);
 
       try (ResultSet results = statement.executeQuery()) {

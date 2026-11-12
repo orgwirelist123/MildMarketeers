@@ -13,7 +13,7 @@
         try{
             // Clear the previously displayed products
             clearDisplay();
-            console.log(products);
+
             // Go through each ProductDetails in the list of products
             products.forEach(product => {
                 // Create a new template instance for this product
@@ -58,8 +58,8 @@
         } catch {
         throw new Error("The server returned an unexpected response.");
         }
-        console.log(result);
-        console.log("Result has been constructed! Checking response status...");
+        // console.log(result);
+        // console.log("Result has been constructed! Checking response status...");
         if (!response.ok) {
         throw new Error(
             result.message ||
@@ -92,11 +92,18 @@
 
     async function search(query)
     {
-        const response = await fetch(`/api/products/search}`, {
-                                    method: "POST",
-                                    body: query});
-        const products = await readResponse(response);
-        displayProducts(products);
+        if(query != "")
+        {
+            const response = await fetch(`/api/products/search`, {
+                                        method: "PUT",
+                                        body: query});
+            const products = await readResponse(response);
+            displayProducts(products.data);
+        }
+        else
+        {
+            refresh();
+        }
     }
 
     function clearDisplay()

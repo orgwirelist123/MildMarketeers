@@ -94,7 +94,7 @@ public class ProductController {
   }
 
   /** Query the database for products that contain the input */
-  @PutMapping ("/search/")
+  @PutMapping ("/search")
   public ResponseEntity<Map<String, ArrayList<ProductDetails>>> queryProduct(@RequestBody String query) throws SQLException{
     ArrayList<ProductDetails> products = repository.searchProducts(query);
     return ResponseEntity.ok().body(Map.of("data", products));
