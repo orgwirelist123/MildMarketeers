@@ -8,6 +8,48 @@
     const refreshButton = document.querySelector('.header-actions [title="Refresh"]');
     const searchBar = document.querySelector('input[type="search"]');
 
+    /* EVENT LISTENERS */
+    // Refresh button input
+    refreshButton.addEventListener("click", (event) => {
+        event.preventDefault();
+        refresh();
+        });
+
+    // Search bar input
+    searchBar.addEventListener('input', (event) =>{
+        const query = event.target.value;
+        search(query);
+        });
+
+    // Reload the list after a product is added or edited.
+    document.addEventListener("products:changed", () => {
+        refresh().catch(console.error);
+    });
+
+    
+     /* READ RESPONSE */
+    async function readResponse(response) {
+        const text = await response.text();
+        let result = {};
+
+        try {
+        result = text ? JSON.parse(text) : {};
+        } catch {
+        throw new Error("The server returned an unexpected response.");
+        }
+
+        if (!response.ok) {
+        throw new Error(
+            result.message ||
+            (response.status === 404
+            ? "This product no longer exists."
+            : "Could not complete the request.")
+        );
+        }
+        return result;
+    }
+
+    /* DISPLAY FUNCTION */
     // Displays all the products in the given array of ProductDetails
     async function displayProducts(products){
         try{
@@ -49,72 +91,34 @@
         }
     }
 
-    async function readResponse(response) {
-        const text = await response.text();
-        let result = {};
-
-        try {
-        result = text ? JSON.parse(text) : {};
-        } catch {
-        throw new Error("The server returned an unexpected response.");
-        }
-        // console.log(result);
-        // console.log("Result has been constructed! Checking response status...");
-        if (!response.ok) {
-        throw new Error(
-            result.message ||
-            (response.status === 404
-            ? "This product no longer exists."
-            : "Could not complete the request.")
-        );
-        }
-        return result;
+    /* HELPER FUNCTIONS */
+    function clearDisplay(){
+        productList.innerHTML = "";
     }
 
-        // Add an event listener to the refresh button.
-    refreshButton.addEventListener("click", (event) => {
-        event.preventDefault();
-        refresh();
-        });
-
-    searchBar.addEventListener('input', (event) =>{
-        const query = event.target.value;
-        search(query);
-    });
-    
-    async function refresh()
-    {
+    /* FETCHING FUNCTIONS */
+    async function refresh(){
         // Get the products from the ProductController
         const response = await fetch(`/api/products/list`);
         const products = await readResponse(response);
         displayProducts(products);
     }
 
-    async function search(query)
-    {
-        if(query != "")
-        {
+    async function search(query){
+        // If the search bar input is empty refresh to show all products
+        // otherwise query the database:
+        if(query != ""){
             const response = await fetch(`/api/products/search`, {
                                         method: "PUT",
                                         body: query});
             const products = await readResponse(response);
+
+            // Display the queries products to the main page
             displayProducts(products.data);
-        }
-        else
-        {
+        } else {
             refresh();
         }
     }
-
-    function clearDisplay()
-    {
-        productList.innerHTML = "";
-    }
-
-    // Reload the list after a product is added or edited.
-    document.addEventListener("products:changed", () => {
-        refresh().catch(console.error);
-    });
 
     // Load saved products when the page first opens.
     refresh().catch(console.error);
