@@ -13,6 +13,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -67,11 +68,10 @@ public class MaterialController {
     }
     
     /** Retrieve materials for a given product. **/
-    @PutMapping("/list")
-    public ResponseEntity<ArrayList<MaterialDetails>> retrieveMaterials(
-        @RequestBody MaterialInput selector) throws SQLException {
-       
-        ArrayList<MaterialDetails> materials = repository.retrieveMaterials(selector.productId());
+    @GetMapping("/list/{productId}")
+    public ResponseEntity<ArrayList<TrimmedMaterialDetails>> retrieveMaterials(
+        @PathVariable("productId") int productId) throws SQLException {
+        ArrayList<TrimmedMaterialDetails> materials = repository.retrieveMaterials(productId);
         return ResponseEntity.ok(materials);
     }
 

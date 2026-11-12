@@ -21,7 +21,7 @@ public final class MaterialRepository {
     public boolean addMaterial(AddMaterialRequest request) throws SQLException {
         String sql =
             """
-            INSERT INTO ONLY public."Material"
+            INSERT INTO public."Material"
                 (material_name, product_id, material_cost, unit_term, unit_quantity, used_quantity)
             VALUES
                 (?, ?, ?, ?, ?, ?)
@@ -79,18 +79,15 @@ public final class MaterialRepository {
      * @return the list of materials for the given product identifier
      * @throws SQLException if the database query fails
      */
-    public ArrayList<MaterialDetails> retrieveMaterials(int productId) throws SQLException {
+    public ArrayList<TrimmedMaterialDetails> retrieveMaterials(int productId) throws SQLException {
         String sql =
             """
-            SELECT product_id, name, sell_price, inventory, units_sold, archived, parent_id
-            FROM ONLY public."Product"
-
             SELECT material_name, material_cost
             FROM ONLY public."Material"
-            WHERE product_id = ?
+            WHERE product_id = ?;
             """;
 
-        ArrayList<MaterialDetails> products = new ArrayList<MaterialDetails>();
+        ArrayList<TrimmedMaterialDetails> products = new ArrayList<TrimmedMaterialDetails>();
         try (Connection connection = DatabaseConnection.open(); PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setInt(1, productId);
             statement.setQueryTimeout(5);
@@ -100,17 +97,15 @@ public final class MaterialRepository {
                 while(results.next())
                 {
                     String materialName = results.getString("material_name");
-                    int productId2 = results.getInt("product_id");
                     BigDecimal materialCost = results.getBigDecimal("material_cost");
-                    String unitTerm = results.getString("unit_term");
-                    BigDecimal unitQuantity = results.getBigDecimal("unit_quantity");
-                    BigDecimal usedQuantity = results.getBigDecimal("used_quantity");
 
                     products.add(
-                        new MaterialDetails(materialName, productId2, materialCost, unitTerm, unitQuantity, usedQuantity));
+                        new TrimmedMaterialDetails(materialName, materialCost));
                 }
 
                 return products;
+            } catch (Exception e) {
+                System.out.println(e.getMessage());
             }
 
         } catch (Exception e) {
@@ -130,14 +125,13 @@ public final class MaterialRepository {
     public boolean deleteMaterial(DeleteMaterialRequest request) throws SQLException {
         String sql =
             """
-            SELECT material_name, material_cost
-            FROM ONLY public."Material"
-            WHERE product_id = ?
-            SORT BY material_name asc;
+            DELETE FROM ONLY public."Material"
+            WHERE material_name = ? AND product_id = ?
             """;
 
         try (Connection connection = DatabaseConnection.open(); PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setInt(1, request.productId());
+            statement.setString(1, request.materialName());
+            statement.setInt(2, request.productId());
             statement.setQueryTimeout(5);
 
             if (statement.executeUpdate() != 1) {
@@ -147,4 +141,30 @@ public final class MaterialRepository {
 
         return true;
     }
+
+    /**
+     * Deletes the material for a given product
+     *
+     * @param request validated material targeter
+     * @return true if the material was added, false otherwise
+     * @throws SQLException if the database query fails
+     */
+    public boolean deleteAllMaterials(int productId) throws SQLException {
+        String sql =
+            """
+            DELETE FROM ONLY public."Material"
+            WHERE product_id = ?
+            """;
+
+        try (Connection connection = DatabaseConnection.open(); PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, productId);
+            statement.setQueryTimeout(5);
+
+            statement.executeUpdate();
+        }
+
+        return true;
+    }
+
+
 }

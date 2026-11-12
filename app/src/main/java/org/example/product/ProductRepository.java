@@ -296,10 +296,10 @@ public final class ProductRepository {
    * Add a product details and records the previous product state.
    *
    * @param request validated product addition
-   * @return true if the product was added, or false if it was not
+   * @return product identifier, if the product was added, or 0 if it was not
    * @throws SQLException if adding or recording history fails
    */
-  public boolean add(AddProductRequest request) throws SQLException {
+  public int add(AddProductRequest request) throws SQLException {
     java.util.Objects.requireNonNull(request, "Add request is required.");
 
     try (Connection connection = DatabaseConnection.open()) {
@@ -397,7 +397,7 @@ public final class ProductRepository {
           }
         }
         connection.commit();
-        return true;
+        return newId;
       } catch (SQLException | RuntimeException exception) {
         try {
           connection.rollback();

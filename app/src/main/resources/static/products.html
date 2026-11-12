@@ -421,11 +421,12 @@
 
                     <!-- Component list -->
                     <ul class="component-list">
-                        <li class="component"> <!-- REMOVE -->
-                            <input type="text" class="input" placeholder="Component name">
-                            <label class="input input-money"><span>$</span><input type="number" min="0" step="0.01" placeholder="0.00"></label>
+                        <!-- REMOVE -->
+                        <!-- <li class="component">
+                            <input type="text" class="input" name="component-name" placeholder="Component name">
+                            <label class="input input-money" name="component-price-label"><span>$</span><input type="number" name="component-price" min="0" step="0.01" placeholder="0.00"></label>
                             <button type="button" class="close-btn" title="Remove component"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
-                        </li>
+                        </li> -->
                     </ul>
 
                     <!-- Add component button -->
@@ -450,7 +451,7 @@
                 </div>
 
                 <!-- Image -->
-                <div class="field">
+                <!-- <div class="field">
                     <span class="field-label">Image <span class="optional">(Optional)</span></span>
                     <div class="image-row">
                         <label class="upload">
@@ -461,7 +462,7 @@
 
                         <span class="field-tip">Drag an image here or click to upload. <br> Accepted file types: JPG, PNG.</span>
                     </div>
-                </div>
+                </div> -->
 
                 <!-- Form submit -->
                 <div class="form-footer">
@@ -665,8 +666,8 @@
 <!-- One component row in the product panel (goes inside .component-list) -->
 <template id="template-component">
     <li class="component">
-        <input type="text" class="input" placeholder="Component name">
-        <label class="input input-money"><span>$</span><input type="number" min="0" step="0.01" placeholder="0.00"></label>
+        <input type="text"  name="component-name" class="input" placeholder="Component name">
+        <label class="input input-money" name="component-price-label"><span>$</span><input type="number" name="component-price" min="0" step="0.01" placeholder="0.00"></label>
         <button type="button" class="close-btn" title="Remove component"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
     </li>
 </template>
