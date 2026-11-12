@@ -93,6 +93,13 @@ public class ProductController {
         Map.of("message", "Product updated successfully."));
   }
 
+  /** Query the database for products that contain the input */
+  @PutMapping ("/search")
+  public ResponseEntity<Map<String, ArrayList<ProductDetails>>> queryProduct(@RequestBody String query) throws SQLException{
+    ArrayList<ProductDetails> products = repository.searchProducts(query);
+    return ResponseEntity.ok().body(Map.of("data", products));
+  };
+
   /** Archives the selected product. **/
   @PutMapping("/archive")
   public ResponseEntity<Map<String, String>> archiveProduct(

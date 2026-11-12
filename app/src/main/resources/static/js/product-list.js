@@ -3,15 +3,60 @@
 (() => {
     const productList = document.querySelector('.product-list');
     const template = document.getElementById('template-product');
+    const parentTemplate = document.getElementById('template-product-group');
+    const subTemplate = document.getElementById('template-subproduct');
     const refreshButton = document.querySelector('.header-actions [title="Refresh"]');
+    const searchBar = document.querySelector('input[type="search"]');
 
+    /* EVENT LISTENERS */
+    // Refresh button input
+    refreshButton.addEventListener("click", (event) => {
+        event.preventDefault();
+        refresh();
+        });
+
+    // Search bar input
+    searchBar.addEventListener('input', (event) =>{
+        const query = event.target.value;
+        search(query);
+        });
+
+    // Reload the list after a product is added or edited.
+    document.addEventListener("products:changed", () => {
+        refresh().catch(console.error);
+    });
+
+    
+     /* READ RESPONSE */
+    async function readResponse(response) {
+        const text = await response.text();
+        let result = {};
+
+        try {
+        result = text ? JSON.parse(text) : {};
+        } catch {
+        throw new Error("The server returned an unexpected response.");
+        }
+
+        if (!response.ok) {
+        throw new Error(
+            result.message ||
+            (response.status === 404
+            ? "This product no longer exists."
+            : "Could not complete the request.")
+        );
+        }
+        return result;
+    }
+
+    /* DISPLAY FUNCTION */
     // Displays all the products in the given array of ProductDetails
     async function displayProducts(products){
         try{
             // Clear the previously displayed products
             clearDisplay();
-            console.log(products);
-            // Go through each ProductDetails in the list
+
+            // Go through each ProductDetails in the list of products
             products.forEach(product => {
                 // Create a new template instance for this product
                 const productEntry = template.content.cloneNode(true);
@@ -35,8 +80,6 @@
                     }).format(product.sellPrice);
 
                 if (product.archived) {
-                    // console.log(productEntry.querySelectorAll());
-                    // console.log(productEntry.children);
                     productEntry.querySelector('.product').classList.add("archived")
                 }
 
@@ -48,51 +91,34 @@
         }
     }
 
-    async function readResponse(response) {
-        const text = await response.text();
-        let result = {};
-
-        try {
-        result = text ? JSON.parse(text) : {};
-        } catch {
-        throw new Error("The server returned an unexpected response.");
-        }
-
-        console.log("Result has been constructed! Checking response status...");
-        if (!response.ok) {
-        throw new Error(
-            result.message ||
-            (response.status === 404
-            ? "This product no longer exists."
-            : "Could not complete the request.")
-        );
-        }
-        return result;
+    /* HELPER FUNCTIONS */
+    function clearDisplay(){
+        productList.innerHTML = "";
     }
 
-        // Add an event listener to the refresh button.
-    refreshButton.addEventListener("click", (event) => {
-        event.preventDefault();
-        refresh();
-        });
-
-    async function refresh()
-    {
+    /* FETCHING FUNCTIONS */
+    async function refresh(){
         // Get the products from the ProductController
         const response = await fetch(`/api/products/list`);
         const products = await readResponse(response);
         displayProducts(products);
     }
 
-    function clearDisplay()
-    {
-        productList.innerHTML = "";
-    }
+    async function search(query){
+        // If the search bar input is empty refresh to show all products
+        // otherwise query the database:
+        if(query != ""){
+            const response = await fetch(`/api/products/search`, {
+                                        method: "PUT",
+                                        body: query});
+            const products = await readResponse(response);
 
-    // Reload the list after a product is added or edited.
-    document.addEventListener("products:changed", () => {
-        refresh().catch(console.error);
-    });
+            // Display the queries products to the main page
+            displayProducts(products.data);
+        } else {
+            refresh();
+        }
+    }
 
     // Load saved products when the page first opens.
     refresh().catch(console.error);

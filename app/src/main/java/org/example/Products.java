@@ -11,6 +11,8 @@ import org.example.database.*;
 
 public class Products
 {
+
+    // THIS FUNCTIONALITY WAS MOVED TO THE PRODUCT REPOSITORY 
     /***
      * Queries the database's 'Product' table for names that contain the given string.
      * @param searchString the string the search will look for in the product name
