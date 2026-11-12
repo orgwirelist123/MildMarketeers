@@ -11,7 +11,7 @@ const childTemplate = document.getElementById('template-subproduct');
 const refreshButton = document.querySelector('.header-actions [title="Refresh"]');
 
 // Displays all the products in the given array of ProductDetails
-async function displayProducts(products){
+export async function displayProducts(products){
     try{
         // Clear the previously displayed products
         clearDisplay();

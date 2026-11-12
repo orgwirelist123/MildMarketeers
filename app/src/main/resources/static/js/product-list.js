@@ -1,11 +1,31 @@
 "use strict";
 
-import { refreshProducts } from './products/products-helper.js';
+import { displayProducts, refreshProducts } from './products/products-helper.js';
+import { readResponse, ERROR_MESSAGES } from './util/network-helper.js'
 
 (() => {
     // const productList = document.querySelector('.product-list');
     // const template = document.getElementById('template-product');
     const refreshButton = document.querySelector('.header-actions [title="Refresh"]');
+    const searchBar = document.querySelector('input[type="search"]');
+
+    /* EVENT LISTENERS */
+    // Refresh button input
+    refreshButton.addEventListener("click", (event) => {
+        event.preventDefault();
+        refreshProducts();
+    });
+
+    // Search bar input
+    searchBar.addEventListener('input', (event) =>{
+        const query = event.target.value;
+        search(query);
+    });
+
+    // Reload the list after a product is added or edited.
+    document.addEventListener("products:changed", () => {
+        refreshProducts().catch(console.error);
+    });
 
     // // Displays all the products in the given array of ProductDetails
     // async function displayProducts(products){
@@ -95,6 +115,39 @@ import { refreshProducts } from './products/products-helper.js';
     document.addEventListener("products:changed", () => {
         refreshProducts().catch(console.error);
     });
+    /* HELPER FUNCTIONS */
+    // function clearDisplay(){
+    //     productList.innerHTML = "";
+    // }
+
+    /* FETCHING FUNCTIONS */
+    // async function refresh(){
+    //     // Get the products from the ProductController
+    //     const response = await fetch(`/api/products/list`);
+    //     const products = await readResponse(response);
+    //     displayProducts(products);
+    // }
+
+    async function search(query){
+        // If the search bar input is empty refresh to show all products
+        // otherwise query the database:
+        if(query != ""){
+            const response = await fetch(`/api/products/search`, {
+                                        method: "PUT",
+                                        body: query});
+            const products = await readResponse(
+                response,
+                ERROR_MESSAGES.GENERAL.INVALID_RESPONSE, 
+                ERROR_MESSAGES.PRODUCT.MISSING_PRODUCT, 
+                ERROR_MESSAGES.GENERAL.REQUEST_FAILURE
+            );
+
+            // Display the queries products to the main page
+            displayProducts(products.data);
+        } else {
+            refreshProducts();
+        }
+    }
 
     // Load saved products when the page first opens.
     refreshProducts().catch(console.error);
