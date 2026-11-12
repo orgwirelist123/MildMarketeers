@@ -5,6 +5,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Types;
 import java.util.ArrayList;
 import java.util.Optional;
 
@@ -16,13 +17,13 @@ public final class ProductRepository {
   /**
    * Retrieves the product details of all the products in the database.
    *
-   * @return the product, or an empty result if it does not exist
+   * @return the list of products, or an empty result if they do not exist
    * @throws SQLException if the database query fails
    */
   public ArrayList<ProductDetails> retrieveProducts() throws SQLException {
     String sql =
         """
-        SELECT product_id, name, sell_price, inventory, units_sold, archived
+        SELECT product_id, name, sell_price, inventory, units_sold, archived, parent_id
         FROM ONLY public."Product"
         """;
 
@@ -40,8 +41,55 @@ public final class ProductRepository {
           int inventory = results.getInt("inventory");
           int unitsSold = results.getInt("units_sold");
           boolean archived = results.getBoolean("archived");
+          int parentId = results.getInt("parent_id");
           products.add(
-              new ProductDetails(id, name, price, inventory, unitsSold, archived));
+              new ProductDetails(id, name, price, inventory, unitsSold, archived, parentId));
+        }
+
+        return products;
+      }
+
+    } catch (Exception e) {
+      // TODO: handle exception
+    }
+    // return products;
+    return null;
+  }
+
+  /**
+   * Retrieves the product details of all the available parent products in the database.
+   *
+   * @return the list of products, or an empty result if they do not exist
+   * @throws SQLException if the database query fails
+   */
+  public ArrayList<ProductDetails> retrieveAvailableParentProducts(int productId) throws SQLException {
+    // Products must not be archived in order to add subproducts
+    // We check if parent_id is null because a subproduct cannot be a parent
+    String sql =
+        """
+        SELECT product_id, name, sell_price, inventory, units_sold, archived, parent_id
+        FROM ONLY public."Product"
+        WHERE parent_id IS NULL AND archived = FALSE AND product_id <> ?
+        """;
+
+    ArrayList<ProductDetails> products = new ArrayList<ProductDetails>();
+    try (Connection connection = DatabaseConnection.open(); PreparedStatement statement = connection.prepareStatement(sql)) {
+      statement.setInt(1, productId);
+      statement.setQueryTimeout(5);
+
+      try (ResultSet results = statement.executeQuery()) {
+
+        while(results.next())
+        {
+          int id = results.getInt("product_id");
+          String name = results.getString("name");
+          BigDecimal price = results.getBigDecimal("sell_price");
+          int inventory = results.getInt("inventory");
+          int unitsSold = results.getInt("units_sold");
+          boolean archived = results.getBoolean("archived");
+          int parentId = results.getInt("parent_id");
+          products.add(
+              new ProductDetails(id, name, price, inventory, unitsSold, archived, parentId));
         }
 
         return products;
@@ -64,7 +112,7 @@ public final class ProductRepository {
   public Optional<ProductDetails> findById(int productId) throws SQLException {
     String sql =
         """
-        SELECT product_id, name, sell_price, inventory, units_sold, archived
+        SELECT product_id, name, sell_price, inventory, units_sold, archived, parent_id
         FROM ONLY public."Product"
         WHERE product_id = ?
         """;
@@ -86,7 +134,8 @@ public final class ProductRepository {
                 results.getBigDecimal("sell_price"),
                 results.getInt("inventory"),
                 results.getInt("units_sold"),
-                results.getBoolean("archived")));
+                results.getBoolean("archived"),
+                results.getInt("parent_id")));
       }
     }
   }
@@ -162,7 +211,7 @@ public final class ProductRepository {
         String updateSql =
             """
             UPDATE ONLY public."Product"
-            SET name = ?, sell_price = ?, inventory = ?
+            SET name = ?, sell_price = ?, inventory = ?, parent_id = ?
             WHERE product_id = ?
             """;
 
@@ -171,7 +220,15 @@ public final class ProductRepository {
           statement.setString(1, request.name());
           statement.setBigDecimal(2, request.sellPrice());
           statement.setInt(3, request.inventory());
-          statement.setInt(4, request.productId());
+
+          if (request.parentId() == 0) {
+            statement.setNull(4, Types.INTEGER);
+          } else {
+            statement.setInt(4, request.parentId());
+          }
+
+          statement.setInt(5, request.productId());
+
           statement.setQueryTimeout(5);
 
           if (statement.executeUpdate() != 1) {
@@ -250,7 +307,7 @@ public final class ProductRepository {
             """
             INSERT INTO public."Product"
                 (product_id, name, sell_price, units_sold, inventory, parent_id)
-            VALUES (?, ?, ?, 0, ?, NULL)
+            VALUES (?, ?, ?, 0, ?, ?)
             """;
 
         try (PreparedStatement statement =
@@ -259,6 +316,13 @@ public final class ProductRepository {
           statement.setString(2, request.name());
           statement.setBigDecimal(3, request.sellPrice());
           statement.setInt(4, request.inventory());
+
+          if (request.parentId() == 0) {
+            statement.setNull(5, Types.INTEGER);
+          } else {
+            statement.setInt(5, request.parentId());
+          }
+
           statement.setQueryTimeout(5);
 
           if (statement.executeUpdate() != 1) {
@@ -382,16 +446,17 @@ public final class ProductRepository {
             """
             UPDATE ONLY public."Product"
             SET archived = ?
-            WHERE product_id = ?
+            WHERE product_id = ? OR parent_id = ?;
             """;
 
         try (PreparedStatement statement =
             connection.prepareStatement(updateSql)) {
           statement.setBoolean(1, true);
           statement.setInt(2, request.productId());
+          statement.setInt(3, request.productId());
           statement.setQueryTimeout(5);
 
-          if (statement.executeUpdate() != 1) {
+          if (statement.executeUpdate() == 0) {
             throw new SQLException("Could not archive the product.");
           }
         }

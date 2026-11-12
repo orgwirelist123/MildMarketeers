@@ -9,9 +9,11 @@ import java.math.BigDecimal;
  * @param name updated product name
  * @param sellPrice updated selling price
  * @param inventory updated stock quantity
+ * @param parentId updated parent product id
+ *    0 signifies no parent product, which is inserted as 'null' into the SQL database
  */
 public record EditProductRequest(
-    int productId, String name, BigDecimal sellPrice, int inventory) {
+    int productId, String name, BigDecimal sellPrice, int inventory, int parentId) {
 
   /**
    * Validates and normalizes the supplied product details.
@@ -45,6 +47,10 @@ public record EditProductRequest(
 
     if (inventory < 0) {
       throw new IllegalArgumentException("Inventory cannot be negative.");
+    }
+
+    if (parentId < 0) {
+      throw new IllegalArgumentException("Parent product id cannot be less than 0.");
     }
   }
 }
