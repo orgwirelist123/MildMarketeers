@@ -6,6 +6,7 @@ CREATE TABLE "Product" (
     units_sold integer NOT NULL,
     inventory integer NOT NULL,
     parent_id integer,
+    archived boolean DEFAULT FALSE,
     CONSTRAINT "Product_pkey" PRIMARY KEY (product_id)
 );
 
@@ -14,6 +15,8 @@ CREATE TABLE "Sale" (
     product_id integer NOT NULL,
     date date NOT NULL,
     "time" time(0) without time zone NOT NULL,
+    quantity integer NOT NULL,
+    unit_price numeric(12,2) NOT NULL,
     discount numeric(12,2) NOT NULL,
     email character varying(256),
     CONSTRAINT "Sale_pkey" PRIMARY KEY (sale_id)

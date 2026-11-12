@@ -6,6 +6,9 @@ import java.util.ArrayList;
 import java.util.Map;
 
 import org.example.product.AddProductRequest;
+import org.example.product.ArchiveProductRequest;
+import org.example.product.DeleteProductRequest;
+import org.example.product.DuplicateProductRequest;
 import org.example.product.EditProductRequest;
 import org.example.product.ProductDetails;
 import org.example.product.ProductRepository;
@@ -33,6 +36,8 @@ public class ProductController {
 
   /** Input shared by the Add Product and Edit Product forms. */
   public record ProductInput(String name, BigDecimal sellPrice, Integer inventory) {}
+  /** Selector shared by the Delete Product, Archive Product, and Duplicate Product forms. */
+  public record ProductSelector(int productId) {}
 
   /** Retrieves the current values to display in the editing form. */
   @GetMapping("/{productId}")
@@ -86,6 +91,54 @@ public class ProductController {
 
     return ResponseEntity.ok(
         Map.of("message", "Product updated successfully."));
+  }
+
+  /** Archives the selected product. **/
+  @PutMapping("/archive")
+  public ResponseEntity<Map<String, String>> archiveProduct(
+      @RequestBody ProductSelector selector) throws SQLException {
+    ArchiveProductRequest request =
+        new ArchiveProductRequest(selector.productId);
+
+    if (!repository.archive(request)) {
+      return ResponseEntity.status(404)
+        .body(Map.of("message", "This product no longer exists."));
+    }
+
+    return ResponseEntity.ok(
+      Map.of("message", "Product archived successfully."));
+  }
+
+  /** Deletes the selected product. **/
+  @PutMapping("/delete")
+  public ResponseEntity<Map<String, String>> deleteProduct(
+      @RequestBody ProductSelector selector) throws SQLException {
+    DeleteProductRequest request =
+        new DeleteProductRequest(selector.productId);
+
+    if (!repository.delete(request)) {
+      return ResponseEntity.status(404)
+        .body(Map.of("message", "This product no longer exists."));
+    }
+
+    return ResponseEntity.ok(
+      Map.of("message", "Product deleted successfully."));
+  }
+
+  /** Deletes the selected product. **/
+  @PutMapping("/duplicate")
+  public ResponseEntity<Map<String, String>> duplicateProduct(
+      @RequestBody ProductSelector selector) throws SQLException {
+    DuplicateProductRequest request =
+        new DuplicateProductRequest(selector.productId);
+
+    if (!repository.duplicate(request)) {
+      return ResponseEntity.status(404)
+        .body(Map.of("message", "This product no longer exists."));
+    }
+
+    return ResponseEntity.ok(
+      Map.of("message", "Product duplicated successfully."));
   }
 
   /** Returns validation errors so the form can explain what needs correcting. */

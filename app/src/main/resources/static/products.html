@@ -488,7 +488,7 @@
 
                         <div class="sale-product-info">
                             <span class="sale-product-name">Product</span>
-                            <span class="sale-product-stock">Stock: 25</span>
+                            <span class="sale-product-stock">Stock: <span id="sale-stock-num">0</span></span>
                         </div>
                     </div>
                 </div>
@@ -508,11 +508,23 @@
                     <span class="field-label">Price per unit</span>
                     <label class="input input-money price-input"><span>$</span><input type="number" name="price" min="0" step="0.01" placeholder="0.00" required></label>
                 </div>
+                                    <!-- One dollar discount for the entire sale -->
+                <div class="field">
+                    <label class="field-label" for="sale-discount">
+                        Discount for entire sale
+                    </label>
+                    <div class="input input-money">
+                        <span>$</span>
+                        <input id="sale-discount" type="number"
+                               name="discount" min="0" step="0.01"
+                               max="9999999999.99" value="0.00" required>
+                    </div>
+                </div>
 
                 <!-- Total -->
                 <div class="sale-total">
                     <span>Total</span>
-                    <span class="sale-total-amount">$0.00</span>
+                    <span>$<span class="sale-total-amount">0.00</span></span>
                 </div>
 
                 <!-- Submit -->
@@ -545,7 +557,7 @@
                     <div class="menu">
                         <button type="button" class="duplicate">Duplicate</button>
                         <button type="button" popovertarget="panel-product">Add subproduct</button>
-                        <button type="button">Archive</button>
+                        <button type="button" class="archive">Archive</button>
                         <button type="button" class="delete">Delete</button>
                     </div>
                 </details>
@@ -572,7 +584,7 @@
                     <div class="menu">
                         <button type="button" class="duplicate">Duplicate</button>
                         <button type="button" popovertarget="panel-product">Add subproduct</button>
-                        <button type="button">Archive</button>
+                        <button type="button" class="archive">Archive</button>
                         <button type="button" class="delete">Delete</button>
                     </div>
                 </details>
@@ -599,7 +611,7 @@
                     <summary class="dots"><svg viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="19" r="1.6"/></svg></summary>
                     <div class="menu">
                         <button type="button" class="duplicate">Duplicate</button>
-                        <button type="button">Archive</button>
+                        <button type="button" class="archive">Archive</button>
                         <button type="button" class="delete">Delete</button>
                     </div>
                 </details>
@@ -662,5 +674,9 @@
 <script src="js/notifications.js"></script>
 <script src="js/product-form.js" defer></script>
 <script src="js/product-list.js" defer></script>
+<script src="js/register-sale.js" defer></script>
+<script src="js/products/product-delete.js" type="module" defer></script>
+<script src="js/products/product-archive.js" type="module" defer></script>
+<script src="js/products/product-duplicate.js" type="module" defer></script>
 </body>
 </html>
