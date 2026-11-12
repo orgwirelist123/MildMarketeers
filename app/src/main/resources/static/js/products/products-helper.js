@@ -19,6 +19,11 @@ async function displayProducts(products){
                 viewButton.dataset.productId = product.productId;
             }
 
+            const saleButton = productEntry.querySelector(".btn-sale");
+            if (saleButton) {
+                saleButton.dataset.productId = product.productId;
+            }
+
             // Fill in data to their appropriate positions
             productEntry.querySelector('.name').textContent = product.name;
             productEntry.querySelector('.stock').textContent = product.inventory;

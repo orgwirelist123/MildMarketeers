@@ -26,20 +26,6 @@ public final class ProductRepository {
         FROM ONLY public."Product"
         """;
 
-    String retrieveArchivedProducts = 
-        """
-        SELECT ph.product_id, ph.name, ph.sell_price, ph.inventory
-        FROM 
-          ONLY public."ProductHistory" ph
-          LEFT JOIN ONLY public."Product" p
-          ON ph.product_id = p.product_id
-        WHERE 
-          p.product_id IS NULL
-          AND ph.change_time = (SELECT MAX(ph2.change_time)
-            FROM ONLY public."ProductHistory" ph2
-            WHERE ph.product_id = ph2.product_id
-          )
-        """;
     ArrayList<ProductDetails> products = new ArrayList<ProductDetails>();
     // products.add(new ProductDetails(1, "TestProduct", new BigDecimal(100.00), 5));
     // products.add(new ProductDetails(2, "TestProduct2", new BigDecimal(5.00), 10));
@@ -54,23 +40,11 @@ public final class ProductRepository {
           String name = results.getString("name");
           BigDecimal price = results.getBigDecimal("sell_price");
           int inventory = results.getInt("inventory");
-          products.add(new ProductDetails(id, name, price, inventory, false));
+          boolean archived = results.getBoolean("archived");
+          products.add(new ProductDetails(id, name, price, inventory, archived));
         }
 
-        try (PreparedStatement archiveRetrieval = connection.prepareStatement(retrieveArchivedProducts)) {
-          ResultSet archiveResults = archiveRetrieval.executeQuery();
-
-          while(archiveResults.next())
-          {
-            int id = archiveResults.getInt("product_id");
-            String name = archiveResults.getString("name");
-            BigDecimal price = archiveResults.getBigDecimal("sell_price");
-            int inventory = archiveResults.getInt("inventory");
-            products.add(new ProductDetails(id, name, price, inventory, true));
-          }
-          
-          return products;
-        }
+        return products;
       }
     
     } catch (Exception e) {
@@ -376,9 +350,9 @@ public final class ProductRepository {
             """
             INSERT INTO public."ProductHistory"
                 (product_id, name, sell_price, units_sold, inventory,
-                 parent_id, change_id, change_date, change_time)
+                 parent_id, archived, change_id, change_date, change_time)
             SELECT product_id, name, sell_price, units_sold, inventory,
-                   parent_id,
+                   parent_id, archived,
                    (SELECT COALESCE(MAX(change_id), 0) + 1
                     FROM ONLY public."ProductHistory"),
                    CURRENT_DATE, LOCALTIMESTAMP(0)
@@ -405,17 +379,19 @@ public final class ProductRepository {
 
         String updateSql = 
             """
-            DELETE FROM ONLY public."Product"
+            UPDATE ONLY public."Product"
+            SET archived = ?
             WHERE product_id = ?
             """;
 
         try (PreparedStatement statement =
             connection.prepareStatement(updateSql)) {
-          statement.setInt(1, request.productId());
+          statement.setBoolean(1, true);
+          statement.setInt(2, request.productId());
           statement.setQueryTimeout(5);
 
           if (statement.executeUpdate() != 1) {
-            throw new SQLException("Could not delete the product.");
+            throw new SQLException("Could not archive the product.");
           }
         }
 
@@ -628,9 +604,9 @@ public final class ProductRepository {
         String updateSql = 
             """
             INSERT INTO public."Product"
-              (product_id, name, sell_price, units_sold, inventory, parent_id)
+              (product_id, name, sell_price, units_sold, inventory, parent_id, archived)
             SELECT
-              ?, p.name, p.sell_price, p.units_sold, p.inventory, p.parent_id
+              ?, p.name, p.sell_price, 0, p.inventory, p.parent_id, p.archived
             FROM ONLY
               public."Product" as p
             WHERE

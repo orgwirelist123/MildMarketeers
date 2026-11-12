@@ -3,9 +3,7 @@ package org.example.product;
 /**
  * Validated input for archiving a product from the 'Product' table.
  *
- * @param name updated product name
- * @param sellPrice updated selling price
- * @param inventory updated stock quantity
+ * @param productId identifier of the existing product
  */
 public record ArchiveProductRequest(
     int productId) {

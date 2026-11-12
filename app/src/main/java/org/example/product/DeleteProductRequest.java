@@ -3,9 +3,7 @@ package org.example.product;
 /**
  * Validated input for deleting a product from the 'Product' and 'ProductHistory' table.
  *
- * @param name updated product name
- * @param sellPrice updated selling price
- * @param inventory updated stock quantity
+ * @param productId identifier of the existing product
  */
 public record DeleteProductRequest(
     int productId) {
