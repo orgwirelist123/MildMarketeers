@@ -22,7 +22,7 @@ public final class ProductRepository {
   public ArrayList<ProductDetails> retrieveProducts() throws SQLException {
     String sql =
         """
-        SELECT product_id, name, sell_price, inventory
+        SELECT product_id, name, sell_price, inventory, archived
         FROM ONLY public."Product"
         """;
 
@@ -472,13 +472,9 @@ public final class ProductRepository {
                   WHERE product_id = ?
                   """;
 
-              System.out.println(deleteSqlProduct);
-
               try (PreparedStatement deleteStatement =
                   connection.prepareStatement(deleteSqlProduct)) {
                 deleteStatement.setInt(1, request.productId());
-
-                System.out.println(deleteStatement);
 
                 deleteStatement.setQueryTimeout(5);
 
@@ -496,8 +492,6 @@ public final class ProductRepository {
             WHERE product_id = ?
             """;
 
-        System.out.println(deleteSqlProductHistory);
-
         try (PreparedStatement statement =
             connection.prepareStatement(deleteSqlProductHistory)) {
           statement.setInt(1, request.productId());
@@ -505,8 +499,6 @@ public final class ProductRepository {
           statement.setQueryTimeout(5);
 
           statement.executeUpdate();
-
-          // System.out.println(result);
 
           // if (result != 1 && result != 0) {
           //   throw new SQLException("Could not delete the product history.");
