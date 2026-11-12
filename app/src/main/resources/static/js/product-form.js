@@ -29,6 +29,7 @@ import { makeRequest, readResponse, GetDefaultHeaderType, ERROR_MESSAGES } from 
   let ready = true;
   let availableParents = {};
   let parentId = 0;
+  let setParentForDirectAddSubproduct = false;
 
   nameInput.maxLength = 50;
   quantityInput.max = "2147483647";
@@ -64,56 +65,65 @@ import { makeRequest, readResponse, GetDefaultHeaderType, ERROR_MESSAGES } from 
     addButton.disabled = busy;
   }
 
-  function showPanel(productId = 0) {
+  
+  function refreshParentProducts(productId = 0, targetParentId = 0) {
+    // When displaying the panel, also refresh the subproduct dropdown in the product panel
+    // Get the valid parent products
+    try {
+      const url = '/api/products/listAvailableParents/' + productId;
+      fetch(url).then((response) => {
+        readResponse(
+          response,
+          ERROR_MESSAGES.GENERAL.INVALID_RESPONSE, 
+          ERROR_MESSAGES.PRODUCT.MISSING_PRODUCT, 
+          ERROR_MESSAGES.GENERAL.REQUEST_FAILURE
+        ).then((products) => {
+          // Clear the previous .parent-list
+          parentList.innerHTML = "";
+          availableParents = {};
+
+          // Include a 'none' option for products without parents
+          products.unshift({
+            productId: 0,
+            name: "None"
+          });
+
+          // Generate the new button entries
+          products.forEach(product => {
+            availableParents[product.productId] = product.name;
+
+            // Create a new template instance for this product
+            const parentEntry = parentProductTemplate.content.cloneNode(true);
+            const parentOption = parentEntry.querySelector(".parent-option");
+            
+            // Attach the parent's product id
+            parentOption.dataset.productId = product.productId;
+
+            // Fill in the name
+            parentOption.textContent = product.name;
+
+            // Append the new template instance to the product-list
+            parentList.appendChild(parentEntry);
+          });
+
+          if (targetParentId != 0) {
+            setTargetParent(targetParentId);
+          }
+        })
+      })
+    } catch (error) {
+      message.textContent = error.message || "Could not load the product.";
+    } finally {
+      busy = false;
+      updateControls();
+    }
+  }
+
+  function showPanel(productId) {
     if (!panel.matches(":popover-open")) {
       panel.showPopover();
 
-      // When displaying the panel, also refresh the subproduct dropdown in the product panel
-      // Get the valid parent products
-      try {
-        const url = '/api/products/listAvailableParents/' + productId;
-        fetch(url).then((response) => {
-          readResponse(
-            response,
-            ERROR_MESSAGES.GENERAL.INVALID_RESPONSE, 
-            ERROR_MESSAGES.PRODUCT.MISSING_PRODUCT, 
-            ERROR_MESSAGES.GENERAL.REQUEST_FAILURE
-          ).then((products) => {
-            // Clear the previous .parent-list
-            parentList.innerHTML = "";
-            availableParents = {};
-
-            // Include a 'none' option for products without parents
-            products.unshift({
-              productId: 0,
-              name: "None"
-            });
-
-            // Generate the new button entries
-            products.forEach(product => {
-              availableParents[product.productId] = product.name;
-
-              // Create a new template instance for this product
-              const parentEntry = parentProductTemplate.content.cloneNode(true);
-              const parentOption = parentEntry.querySelector(".parent-option");
-              
-              // Attach the parent's product id
-              parentOption.dataset.productId = product.productId;
-
-              // Fill in the name
-              parentOption.textContent = product.name;
-
-              // Append the new template instance to the product-list
-              parentList.appendChild(parentEntry);
-            });
-          })
-        })
-      } catch (error) {
-        message.textContent = error.message || "Could not load the product.";
-      } finally {
-        busy = false;
-        updateControls();
-      }
+      refreshParentProducts(productId);
     }
   }
 
@@ -156,7 +166,13 @@ import { makeRequest, readResponse, GetDefaultHeaderType, ERROR_MESSAGES } from 
     panel.classList.remove("is-viewing");
     form.reset();
     message.textContent = "";
-    clearTargetParent();
+
+    if (!setParentForDirectAddSubproduct) {
+      console.log("cleared target parent");
+      clearTargetParent();
+    }
+    setParentForDirectAddSubproduct = false;
+
     updateControls();
     showPanel();
   }
@@ -239,7 +255,19 @@ import { makeRequest, readResponse, GetDefaultHeaderType, ERROR_MESSAGES } from 
     event.preventDefault();
 
     setTargetParent(button.dataset.productId);
-  })
+  });
+
+  document.addEventListener("click", (event) => {
+    const button = event.target.closest(".add-subproduct");
+    if (!button) return;
+
+    // event.preventDefault();
+    refreshParentProducts(0, button.dataset.productId);
+    setParentForDirectAddSubproduct = true;
+    // console.log("adding a subproduct for parent: " + button.dataset.productId);
+    // setTargetParent(button.dataset.productId);
+    // console.log(parentId);
+  });
 
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
