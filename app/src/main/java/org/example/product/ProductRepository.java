@@ -46,7 +46,6 @@ public final class ProductRepository {
           int parentId = results.getInt("parent_id");
           products.add(
               new ProductDetails(id, name, price, inventory, unitsSold, archived, parentId));
-          System.out.println(name);
         }
 
         return products;
