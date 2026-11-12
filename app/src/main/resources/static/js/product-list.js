@@ -3,7 +3,10 @@
 (() => {
     const productList = document.querySelector('.product-list');
     const template = document.getElementById('template-product');
+    const parentTemplate = document.getElementById('template-product-group');
+    const subTemplate = document.getElementById('template-subproduct');
     const refreshButton = document.querySelector('.header-actions [title="Refresh"]');
+    const searchBar = document.querySelector('input[type="search"]');
 
     // Displays all the products in the given array of ProductDetails
     async function displayProducts(products){
@@ -11,7 +14,7 @@
             // Clear the previously displayed products
             clearDisplay();
             console.log(products);
-            // Go through each ProductDetails in the list
+            // Go through each ProductDetails in the list of products
             products.forEach(product => {
                 // Create a new template instance for this product
                 const productEntry = template.content.cloneNode(true);
@@ -35,8 +38,6 @@
                     }).format(product.sellPrice);
 
                 if (product.archived) {
-                    // console.log(productEntry.querySelectorAll());
-                    // console.log(productEntry.children);
                     productEntry.querySelector('.product').classList.add("archived")
                 }
 
@@ -57,7 +58,7 @@
         } catch {
         throw new Error("The server returned an unexpected response.");
         }
-
+        console.log(result);
         console.log("Result has been constructed! Checking response status...");
         if (!response.ok) {
         throw new Error(
@@ -76,10 +77,24 @@
         refresh();
         });
 
+    searchBar.addEventListener('input', (event) =>{
+        const query = event.target.value;
+        search(query);
+    });
+    
     async function refresh()
     {
         // Get the products from the ProductController
         const response = await fetch(`/api/products/list`);
+        const products = await readResponse(response);
+        displayProducts(products);
+    }
+
+    async function search(query)
+    {
+        const response = await fetch(`/api/products/search}`, {
+                                    method: "POST",
+                                    body: query});
         const products = await readResponse(response);
         displayProducts(products);
     }
