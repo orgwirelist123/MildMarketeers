@@ -737,4 +737,45 @@ public final class ProductRepository {
       }
     }
   }
+
+  /**
+   * Retrieves all current tags of a product.
+   * 
+   * @param productId identifier of requested product
+   * @return the product's tags, or an empty result if none exist
+   * @throws SQLException if the database query fails
+   */
+  public ArrayList<String> findTagsByProductId(int productId) throws SQLException {
+    String sql =
+      """
+      SELECT tag.label AS taglabel
+      FROM public."TagFor" tagfor JOIN ONLY public."Tag" tag ON tagfor.tag_id = tag.tag_id
+      WHERE tagfor.product_id = ?
+      """;
+
+    try (Connection connection = DatabaseConnection.open(); 
+        PreparedStatement statement = connection.prepareStatement(sql)) {
+      statement.setInt(1, productId);
+      statement.setQueryTimeout(5);
+      
+      try (ResultSet results = statement.executeQuery()) {   
+        ArrayList<String> productTags = new ArrayList<String>();
+
+        while(results.next())
+        {
+          productTags.add(results.getString("taglabel"));
+        }
+        
+        return productTags;
+      }    
+    }
+  }
+
+  // public boolean addProductTags() throws SQLException {
+
+  // }
+
+  // public boolean updateProductTags(int productId) throws SQLException {
+
+  // }
 }
