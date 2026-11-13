@@ -24,6 +24,11 @@ const childTemplate = document.getElementById('template-subproduct');
 
 const refreshButton = document.querySelector('.header-actions [title="Refresh"]');
 
+// First letter of the product name shown in the thumbnail
+function thumbLetter(name) {
+    return Array.from(name.trim())[0]?.toUpperCase() ?? '?';
+}
+
 // Displays all the products in the given array of ProductDetails
 export async function displayProducts(products){
     try{
@@ -125,6 +130,7 @@ export async function displayProducts(products){
             }
 
             // Fill in data to their appropriate positions
+            productEntry.querySelector('.thumb').textContent = thumbLetter(productFamily.Data.name);
             productEntry.querySelector('.name').textContent = productFamily.Data.name;
             productEntry.querySelector('.stock').textContent = productFamily.Data.inventory;
             productEntry.querySelector('.price').textContent =
@@ -162,6 +168,7 @@ export async function displayProducts(products){
                 }
 
                 // Fill in data to their appropriate positions
+                productEntry.querySelector('.thumb').textContent = thumbLetter(child.name);
                 productEntry.querySelector('.name').textContent = child.name;
                 productEntry.querySelector('.stock').textContent = child.inventory;
                 productEntry.querySelector('.price').textContent =
