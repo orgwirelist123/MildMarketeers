@@ -194,6 +194,7 @@
     } catch (error) {
       loadError = "Could not load sales. Please try Refresh.";
       console.error("Sales loading failed:", error);
+      sendNotification(error.message || "Could not load sales. Please try Refresh.");
     } finally {
       loading = false;
       refreshButton.disabled = false;

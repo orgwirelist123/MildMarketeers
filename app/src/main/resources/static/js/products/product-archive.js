@@ -51,13 +51,17 @@ import { refreshProducts } from './products-helper.js';
                 );
             }
 
-            status.textContent = action === "restore"
+            sendNotification(action === "restore"
                 ? "Product restored. Archived subproducts can be restored individually."
-                : "Product archived.";
+                : "Product archived.");
+
+            // status.textContent = action === "restore"
+            //     ? "Product restored. Archived subproducts can be restored individually."
+            //     : "Product archived.";
 
             await refreshProducts();
         } catch (error) {
-            status.textContent = error.message || "Could not reach the server.";
+            sendNotification(error.message || "Could not reach the server.");
         } finally {
             pending.delete(productId);
             button.disabled = false;

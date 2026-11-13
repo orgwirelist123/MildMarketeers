@@ -57,6 +57,7 @@ import { refreshProducts } from './products-helper.js';
             await readResponse(response);
 
             refreshProducts();
+            sendNotification("Product deleted successfully!");
         } catch (error) {
             sendNotification(error.message || "Could not reach the server.");
         } finally {

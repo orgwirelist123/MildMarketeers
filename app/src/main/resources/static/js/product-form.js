@@ -438,7 +438,8 @@ import { makeRequest, readResponse, GetDefaultHeaderType, ERROR_MESSAGES } from 
       ready = true;
       message.textContent = "";
     } catch (error) {
-      message.textContent = error.message || "Could not load the product.";
+      sendNotification(error.message || "Could not load the product.");
+      // message.textContent = error.message || "Could not load the product.";
     } finally {
       busy = false;
       updateControls();
@@ -587,7 +588,8 @@ import { makeRequest, readResponse, GetDefaultHeaderType, ERROR_MESSAGES } from 
       );
     } catch (error) {
       // Preserve entries after an unsuccessful save.
-      message.textContent = error.message || "Could not reach the server.";
+      sendNotification(error.message || "Could not reach the server.");
+      // message.textContent = error.message || "Could not reach the server.";
     } finally {
       busy = false;
       updateControls();
