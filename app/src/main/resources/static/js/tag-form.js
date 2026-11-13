@@ -21,6 +21,7 @@ export function createTagEditor(form) {
     const name = dropdown.querySelector('.new-tag-form input[type="text"]');
     const create = dropdown.querySelector('.new-tag-form button');
     const status = document.createElement('p');
+    status.className = 'menu-message';
     status.setAttribute('role', 'status');
     dropdown.querySelector('.new-tag-form').append(status);
     dropdown.querySelector('.color-types').hidden = false;

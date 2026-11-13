@@ -4,9 +4,6 @@ import { refreshProducts } from './products-helper.js';
 
 (() => {
     const pending = new Set();
-    const status = document.createElement("p");
-    status.setAttribute("role", "status");
-    document.querySelector(".product-list").before(status);
 
     document.addEventListener("click", async (event) => {
         const button = event.target.closest(".archive");
@@ -19,16 +16,13 @@ import { refreshProducts } from './products-helper.js';
 
         if (!Number.isInteger(productId) ||
             !["archive", "restore"].includes(action)) {
-            status.textContent = "Refresh Products before trying again.";
+            sendNotification("Refresh Products before trying again.");
             return;
         }
 
         if (pending.has(productId)) return;
         pending.add(productId);
         button.disabled = true;
-        status.textContent = action === "restore"
-            ? "Restoring product…"
-            : "Archiving product…";
 
         try {
             const response = await fetch(`/api/products/${action}`, {
@@ -52,12 +46,8 @@ import { refreshProducts } from './products-helper.js';
             }
 
             sendNotification(action === "restore"
-                ? "Product restored. Archived subproducts can be restored individually."
-                : "Product archived.");
-
-            // status.textContent = action === "restore"
-            //     ? "Product restored. Archived subproducts can be restored individually."
-            //     : "Product archived.";
+                ? "Product restored! Archived subproducts can be restored individually."
+                : "Product archived!");
 
             await refreshProducts();
         } catch (error) {
