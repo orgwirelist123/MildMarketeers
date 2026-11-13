@@ -118,6 +118,13 @@ export async function displayProducts(products){
                     currency: "USD"
                 }).format(productFamily.Data.sellPrice);
 
+            const archiveButton = productEntry.querySelector(".archive");
+            if (archiveButton) {
+                archiveButton.textContent = productFamily.Data.archived ? "Restore" : "Archive";
+                archiveButton.dataset.productId = productFamily.Data.productId;
+                archiveButton.dataset.action = productFamily.Data.archived ? "restore" : "archive";
+            }
+
             if (productFamily.Data.archived) {
                 productEntry.querySelector('.product').classList.add("archived")
             }
@@ -146,6 +153,13 @@ export async function displayProducts(products){
                         style: "currency",
                         currency: "USD"
                     }).format(child.sellPrice);
+
+                const archiveButton = productEntry.querySelector(".archive");
+                if (archiveButton) {
+                    archiveButton.textContent = child.archived ? "Restore" : "Archive";
+                    archiveButton.dataset.productId = child.productId;
+                    archiveButton.dataset.action = child.archived ? "restore" : "archive";
+                }
 
                 if (child.archived) {
                     productEntry.querySelector('.product').classList.add("archived")

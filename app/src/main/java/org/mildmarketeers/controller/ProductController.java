@@ -155,6 +155,17 @@ public class ProductController {
       Map.of("message", "Product archived successfully."));
   }
 
+  /** Restores the selected product without changing stock or related records. */
+  @PutMapping("/restore")
+  public ResponseEntity<Map<String, String>> restoreProduct(
+      @RequestBody ProductSelector selector) throws SQLException {
+    if (!repository.restore(new ArchiveProductRequest(selector.productId()))) {
+      return ResponseEntity.status(404)
+          .body(Map.of("message", "This product no longer exists."));
+    }
+    return ResponseEntity.ok(Map.of("message", "Product restored successfully."));
+  }
+
   /** Deletes the selected product. **/
   @PutMapping("/delete")
   public ResponseEntity<Map<String, String>> deleteProduct(

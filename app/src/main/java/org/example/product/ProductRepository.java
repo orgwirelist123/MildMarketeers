@@ -210,7 +210,7 @@ public final class ProductRepository {
         try (PreparedStatement statement =
             connection.prepareStatement(
                 """
-                SELECT product_id
+                SELECT product_id, parent_id
                 FROM ONLY public."Product"
                 WHERE product_id = ?
                 FOR UPDATE
@@ -222,6 +222,9 @@ public final class ProductRepository {
             if (!result.next()) {
               connection.rollback();
               return false;
+            }
+            if (result.getInt("parent_id") != request.parentId()) {
+              requireActiveParent(connection, request.parentId(), request.productId());
             }
           }
         }
@@ -314,6 +317,8 @@ public final class ProductRepository {
           statement.setQueryTimeout(5);
           statement.execute();
         }
+
+        requireActiveParent(connection, request.parentId(), 0);
 
         int newId;
         boolean inUse = true;
@@ -516,6 +521,106 @@ public final class ProductRepository {
     }
   }
 
+
+  /** Restores only the selected product, preserving related records and recording history. */
+  public boolean restore(ArchiveProductRequest request) throws SQLException {
+    java.util.Objects.requireNonNull(request, "Restore request is required.");
+
+    try (Connection connection = DatabaseConnection.open()) {
+      connection.setAutoCommit(false);
+
+      try {
+        // The current schema has no automatic history ID generator.
+        // Hold this lock until commit so concurrent history writes cannot
+        // allocate the same next ID.
+        try (PreparedStatement statement =
+            connection.prepareStatement(
+                "LOCK TABLE public.\"ProductHistory\" IN EXCLUSIVE MODE")) {
+          statement.setQueryTimeout(5);
+          statement.execute();
+        }
+
+        // Lock the current product so its saved history matches the state
+        // immediately before this update.
+        try (PreparedStatement statement =
+            connection.prepareStatement(
+                """
+                SELECT product_id, parent_id, archived
+                FROM ONLY public."Product"
+                WHERE product_id = ?
+                FOR UPDATE
+                """)) {
+          statement.setInt(1, request.productId());
+          statement.setQueryTimeout(5);
+
+          try (ResultSet result = statement.executeQuery()) {
+            if (!result.next()) {
+              connection.rollback();
+              return false;
+            }
+            if (!result.getBoolean("archived")) {
+              connection.commit();
+              return true;
+            }
+            requireActiveParent(connection, result.getInt("parent_id"), request.productId());
+          }
+        }
+
+        String historySql =
+            """
+            INSERT INTO public."ProductHistory"
+                (product_id, name, sell_price, units_sold, inventory,
+                 parent_id, archived, change_id, change_date, change_time)
+            SELECT product_id, name, sell_price, units_sold, inventory,
+                   parent_id, archived,
+                   (SELECT COALESCE(MAX(change_id), 0) + 1
+                    FROM ONLY public."ProductHistory"),
+                   CURRENT_DATE, LOCALTIMESTAMP(0)
+            FROM ONLY public."Product"
+            WHERE product_id = ?
+            """;
+
+        try (PreparedStatement statement =
+            connection.prepareStatement(historySql)) {
+          statement.setInt(1, request.productId());
+          statement.setQueryTimeout(5);
+
+          if (statement.executeUpdate() != 1) {
+            throw new SQLException("Could not record the product's previous state.");
+          }
+        }
+
+        String updateSql =
+            """
+            UPDATE ONLY public."Product"
+            SET archived = ?
+            WHERE product_id = ?;
+            """;
+
+        try (PreparedStatement statement =
+            connection.prepareStatement(updateSql)) {
+          statement.setBoolean(1, false);
+          statement.setInt(2, request.productId());
+          statement.setQueryTimeout(5);
+
+          if (statement.executeUpdate() == 0) {
+            throw new SQLException("Could not restore the product.");
+          }
+        }
+
+        connection.commit();
+        return true;
+      } catch (SQLException | RuntimeException exception) {
+        try {
+          connection.rollback();
+        } catch (SQLException rollbackException) {
+          exception.addSuppressed(rollbackException);
+        }
+        throw exception;
+      }
+    }
+  }
+
   /**
    * Delete a product and its previous product history.
    *
@@ -685,7 +790,7 @@ public final class ProductRepository {
         try (PreparedStatement statement =
             connection.prepareStatement(
                 """
-                SELECT product_id
+                SELECT product_id, parent_id
                 FROM ONLY public."Product"
                 WHERE product_id = ?
                 FOR UPDATE
@@ -698,6 +803,7 @@ public final class ProductRepository {
               connection.rollback();
               return false;
             }
+            requireActiveParent(connection, result.getInt("parent_id"), 0);
           }
         }
 
@@ -733,6 +839,48 @@ public final class ProductRepository {
           exception.addSuppressed(rollbackException);
         }
         throw exception;
+      }
+    }
+  }
+
+  /** Validates a new parent assignment while holding its row lock until commit. */
+  private static void requireActiveParent(Connection connection, int parentId, int productId)
+      throws SQLException {
+    if (parentId == 0) return;
+    if (parentId == productId) {
+      throw new IllegalArgumentException("A product cannot be its own parent.");
+    }
+    try (PreparedStatement statement = connection.prepareStatement("""
+        SELECT archived, parent_id
+        FROM ONLY public."Product"
+        WHERE product_id = ?
+        FOR UPDATE
+        """)) {
+      statement.setInt(1, parentId);
+      statement.setQueryTimeout(5);
+      try (ResultSet result = statement.executeQuery()) {
+        if (!result.next()) {
+          throw new IllegalArgumentException("The selected parent product no longer exists.");
+        }
+        if (result.getBoolean("archived")) {
+          throw new IllegalArgumentException("Restore the parent product before adding or restoring a subproduct.");
+        }
+        if (result.getInt("parent_id") != 0) {
+          throw new IllegalArgumentException("A subproduct cannot be selected as a parent.");
+        }
+      }
+    }
+    if (productId != 0) {
+      try (PreparedStatement statement = connection.prepareStatement("""
+          SELECT 1 FROM ONLY public."Product" WHERE parent_id = ? LIMIT 1
+          """)) {
+        statement.setInt(1, productId);
+        statement.setQueryTimeout(5);
+        try (ResultSet result = statement.executeQuery()) {
+          if (result.next()) {
+            throw new IllegalArgumentException("A product with subproducts cannot become a subproduct.");
+          }
+        }
       }
     }
   }
