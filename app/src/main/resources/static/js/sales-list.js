@@ -12,6 +12,7 @@
   const sortButtons = [...sortDropdown.querySelectorAll(".menu button")];
 
   const status = document.createElement("p");
+  status.className = "status-message";
   status.setAttribute("role", "status");
   status.setAttribute("aria-live", "polite");
   list.before(status);
@@ -146,9 +147,10 @@
     } else if (filtered.length === 0) {
       status.textContent = "No sales match your search.";
     } else {
-      status.textContent =
-        `${filtered.length} sale${filtered.length === 1 ? "" : "s"} displayed.`;
+      status.textContent = "";
     }
+
+    status.hidden = !status.textContent;
   }
 
   async function refresh() {

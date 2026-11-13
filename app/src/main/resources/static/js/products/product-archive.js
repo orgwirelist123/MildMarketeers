@@ -3,67 +3,64 @@
 import { refreshProducts } from './products-helper.js';
 
 (() => {
-    // For archive buttons that are clicked, send a archive request
-    document.addEventListener("click", (event) => {
+    const pending = new Set();
+    const status = document.createElement("p");
+    status.setAttribute("role", "status");
+    document.querySelector(".product-list").before(status);
+
+    document.addEventListener("click", async (event) => {
         const button = event.target.closest(".archive");
         if (!button) return;
 
         event.preventDefault();
 
-        const targetRow = button.parentElement.parentElement.parentElement.querySelector(".btn-view").closest("[data-product-id]");
-        const productId = targetRow?.dataset.productId;
+        const productId = Number(button.dataset.productId);
+        const action = button.dataset.action;
 
-        archiveProduct(productId);
-    });
-
-    async function readResponse(response) {
-        const text = await response.text();
-
-        let result = {};
-
-        try {
-            result = text ? JSON.parse(text) : {};
-        } catch {
-            throw new Error("The server returned an unexpected response.");
+        if (!Number.isInteger(productId) ||
+            !["archive", "restore"].includes(action)) {
+            status.textContent = "Refresh Products before trying again.";
+            return;
         }
 
-        if (!response.ok) {
-            throw new Error(
-                result.message ||
-                (response.status === 404
-                ? "This product no longer exists."
-                : "Could not complete the request.")
-            );
-        }
-
-        return result;
-    }
-
-    async function archiveProduct(productId) {
-        const payload = {
-            productId: productId
-        };
+        if (pending.has(productId)) return;
+        pending.add(productId);
+        button.disabled = true;
+        status.textContent = action === "restore"
+            ? "Restoring product…"
+            : "Archiving product…";
 
         try {
-            const response = await fetch(
-                "/api/products/archive",
-                {
-                    method: "PUT",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(payload)
-                }
-            );
+            const response = await fetch(`/api/products/${action}`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ productId })
+            });
 
-            await readResponse(response);
+            const text = await response.text();
+            let result = {};
+            try {
+                result = text ? JSON.parse(text) : {};
+            } catch {
+                throw new Error("The server returned an unexpected response.");
+            }
 
-            refreshProducts();
+            if (!response.ok) {
+                throw new Error(
+                    result.message || "Could not complete the request."
+                );
+            }
 
+            status.textContent = action === "restore"
+                ? "Product restored. Archived subproducts can be restored individually."
+                : "Product archived.";
+
+            await refreshProducts();
         } catch (error) {
-            // Preserve entries after an unsuccessful save.
-            // message.textContent = error.message || "Could not reach the server.";
+            status.textContent = error.message || "Could not reach the server.";
         } finally {
-
+            pending.delete(productId);
+            button.disabled = false;
         }
-    }
-
+    });
 })();

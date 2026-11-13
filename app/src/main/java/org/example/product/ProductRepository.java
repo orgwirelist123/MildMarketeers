@@ -189,6 +189,19 @@ public final class ProductRepository {
    * @throws SQLException if saving or recording history fails
    */
   public boolean update(EditProductRequest request) throws SQLException {
+    return update(request, null);
+  }
+
+  /** Saves product fields and optional tag assignments in the same transaction. */
+  public boolean update(EditProductRequest request, java.util.List<String> tags)
+      throws SQLException {
+    return update(request, tags, null);
+  }
+
+  public boolean update(EditProductRequest request, java.util.List<String> tags,
+      java.util.Map<String, String> tagColors) throws SQLException {
+    tags = org.example.tags.TagRepository.validate(tags);
+    tagColors = org.example.tags.TagRepository.validateColors(tags, tagColors);
     java.util.Objects.requireNonNull(request, "Edit request is required.");
 
     try (Connection connection = DatabaseConnection.open()) {
@@ -210,7 +223,7 @@ public final class ProductRepository {
         try (PreparedStatement statement =
             connection.prepareStatement(
                 """
-                SELECT product_id
+                SELECT product_id, parent_id
                 FROM ONLY public."Product"
                 WHERE product_id = ?
                 FOR UPDATE
@@ -222,6 +235,9 @@ public final class ProductRepository {
             if (!result.next()) {
               connection.rollback();
               return false;
+            }
+            if (result.getInt("parent_id") != request.parentId()) {
+              requireActiveParent(connection, request.parentId(), request.productId());
             }
           }
         }
@@ -278,6 +294,7 @@ public final class ProductRepository {
           }
         }
 
+        org.example.tags.TagRepository.replace(connection, request.productId(), tags, tagColors);
         connection.commit();
         return true;
       } catch (SQLException | RuntimeException exception) {
@@ -299,6 +316,19 @@ public final class ProductRepository {
    * @throws SQLException if adding or recording history fails
    */
   public int add(AddProductRequest request) throws SQLException {
+    return add(request, null);
+  }
+
+  /** Saves product fields and optional tag assignments in the same transaction. */
+  public int add(AddProductRequest request, java.util.List<String> tags)
+      throws SQLException {
+    return add(request, tags, null);
+  }
+
+  public int add(AddProductRequest request, java.util.List<String> tags,
+      java.util.Map<String, String> tagColors) throws SQLException {
+    tags = org.example.tags.TagRepository.validate(tags);
+    tagColors = org.example.tags.TagRepository.validateColors(tags, tagColors);
     java.util.Objects.requireNonNull(request, "Add request is required.");
 
     try (Connection connection = DatabaseConnection.open()) {
@@ -314,6 +344,8 @@ public final class ProductRepository {
           statement.setQueryTimeout(5);
           statement.execute();
         }
+
+        requireActiveParent(connection, request.parentId(), 0);
 
         int newId;
         boolean inUse = true;
@@ -395,6 +427,7 @@ public final class ProductRepository {
             throw new SQLException("Could not record the product's previous state.");
           }
         }
+        org.example.tags.TagRepository.replace(connection, newId, tags, tagColors);
         connection.commit();
         return newId;
       } catch (SQLException | RuntimeException exception) {
@@ -516,15 +549,10 @@ public final class ProductRepository {
     }
   }
 
-  /**
-   * Delete a product and its previous product history.
-   *
-   * @param request validated product deletion
-   * @return true if the product was deleted, or false if it was not
-   * @throws SQLException if deleting or recording history fails
-   */
-  public boolean delete(DeleteProductRequest request) throws SQLException {
-    java.util.Objects.requireNonNull(request, "Delete request is required.");
+
+  /** Restores only the selected product, preserving related records and recording history. */
+  public boolean restore(ArchiveProductRequest request) throws SQLException {
+    java.util.Objects.requireNonNull(request, "Restore request is required.");
 
     try (Connection connection = DatabaseConnection.open()) {
       connection.setAutoCommit(false);
@@ -540,31 +568,12 @@ public final class ProductRepository {
           statement.execute();
         }
 
-        // // Lock the current product so its saved history matches the state
-        // // immediately before this update.
-        // try (PreparedStatement statement =
-        //     connection.prepareStatement(
-        //         """
-        //         SELECT product_id
-        //         FROM ONLY public."Product"
-        //         WHERE product_id = ?
-        //         FOR UPDATE
-        //         """)) {
-        //   statement.setInt(1, request.productId());
-        //   statement.setQueryTimeout(5);
-
-        //   try (ResultSet result = statement.executeQuery()) {
-        //     if (!result.next()) {
-        //       connection.rollback();
-        //       return false;
-        //     }
-        //   }
-        // }
-
+        // Lock the current product so its saved history matches the state
+        // immediately before this update.
         try (PreparedStatement statement =
             connection.prepareStatement(
                 """
-                SELECT product_id
+                SELECT product_id, parent_id, archived
                 FROM ONLY public."Product"
                 WHERE product_id = ?
                 FOR UPDATE
@@ -573,47 +582,169 @@ public final class ProductRepository {
           statement.setQueryTimeout(5);
 
           try (ResultSet result = statement.executeQuery()) {
-            if (result.next()) {
-              String deleteSqlProduct =
-                  """
-                  DELETE FROM ONLY public."Product"
-                  WHERE product_id = ?
-                  """;
-
-              try (PreparedStatement deleteStatement =
-                  connection.prepareStatement(deleteSqlProduct)) {
-                deleteStatement.setInt(1, request.productId());
-
-                deleteStatement.setQueryTimeout(5);
-
-                if (deleteStatement.executeUpdate() != 1) {
-                  throw new SQLException("Could not delete the product.");
-                }
-              }
+            if (!result.next()) {
+              connection.rollback();
+              return false;
             }
+            if (!result.getBoolean("archived")) {
+              connection.commit();
+              return true;
+            }
+            requireActiveParent(connection, result.getInt("parent_id"), request.productId());
           }
         }
 
-        String deleteSqlProductHistory =
+        String historySql =
             """
-            DELETE FROM ONLY public."ProductHistory"
+            INSERT INTO public."ProductHistory"
+                (product_id, name, sell_price, units_sold, inventory,
+                 parent_id, archived, change_id, change_date, change_time)
+            SELECT product_id, name, sell_price, units_sold, inventory,
+                   parent_id, archived,
+                   (SELECT COALESCE(MAX(change_id), 0) + 1
+                    FROM ONLY public."ProductHistory"),
+                   CURRENT_DATE, LOCALTIMESTAMP(0)
+            FROM ONLY public."Product"
             WHERE product_id = ?
             """;
 
         try (PreparedStatement statement =
-            connection.prepareStatement(deleteSqlProductHistory)) {
+            connection.prepareStatement(historySql)) {
           statement.setInt(1, request.productId());
-
           statement.setQueryTimeout(5);
 
-          statement.executeUpdate();
-
-          // if (result != 1 && result != 0) {
-          //   throw new SQLException("Could not delete the product history.");
-          // }
+          if (statement.executeUpdate() != 1) {
+            throw new SQLException("Could not record the product's previous state.");
+          }
         }
 
+        String updateSql =
+            """
+            UPDATE ONLY public."Product"
+            SET archived = ?
+            WHERE product_id = ?;
+            """;
 
+        try (PreparedStatement statement =
+            connection.prepareStatement(updateSql)) {
+          statement.setBoolean(1, false);
+          statement.setInt(2, request.productId());
+          statement.setQueryTimeout(5);
+
+          if (statement.executeUpdate() == 0) {
+            throw new SQLException("Could not restore the product.");
+          }
+        }
+
+        connection.commit();
+        return true;
+      } catch (SQLException | RuntimeException exception) {
+        try {
+          connection.rollback();
+        } catch (SQLException rollbackException) {
+          exception.addSuppressed(rollbackException);
+        }
+        throw exception;
+      }
+    }
+  }
+
+  /**
+   * Delete a product and its previous product history.
+   *
+   * @param request validated product deletion
+   * @return true if the product was deleted, or false if it was not
+   * @throws SQLException if deleting or recording history fails
+   */
+  public boolean delete(DeleteProductRequest request) throws SQLException {
+    java.util.Objects.requireNonNull(request, "Delete request is required.");
+
+    try (Connection connection = DatabaseConnection.open()) {
+      connection.setAutoCommit(false);
+
+      try {
+        // Match the lock order used by product edits and sales.
+        try (PreparedStatement statement = connection.prepareStatement(
+            "LOCK TABLE public.\"ProductHistory\" IN EXCLUSIVE MODE")) {
+          statement.setQueryTimeout(5);
+          statement.execute();
+        }
+
+        try (PreparedStatement statement = connection.prepareStatement(
+            """
+            SELECT product_id
+            FROM ONLY public."Product"
+            WHERE product_id = ?
+            FOR UPDATE
+            """)) {
+          statement.setInt(1, request.productId());
+          statement.setQueryTimeout(5);
+          try (ResultSet result = statement.executeQuery()) {
+            if (!result.next()) {
+              connection.rollback();
+              return false;
+            }
+          }
+        }
+
+        // Include inherited SaleHistory rows to protect historical sales too.
+        try (PreparedStatement statement = connection.prepareStatement(
+            """
+            SELECT EXISTS (
+              SELECT 1 FROM public."Sale" WHERE product_id = ?
+            )
+            """)) {
+          statement.setInt(1, request.productId());
+          statement.setQueryTimeout(5);
+          try (ResultSet result = statement.executeQuery()) {
+            result.next();
+            if (result.getBoolean(1)) {
+              throw new IllegalArgumentException(
+                  "This product has recorded sales. Archive it instead.");
+            }
+          }
+        }
+
+        try (PreparedStatement statement = connection.prepareStatement(
+            """
+            SELECT EXISTS (
+              SELECT 1 FROM ONLY public."Product" WHERE parent_id = ?
+            )
+            """)) {
+          statement.setInt(1, request.productId());
+          statement.setQueryTimeout(5);
+          try (ResultSet result = statement.executeQuery()) {
+            result.next();
+            if (result.getBoolean(1)) {
+              throw new IllegalArgumentException(
+                  "This product has subproducts. Archive it instead.");
+            }
+          }
+        }
+
+        // Remove current dependencies, preserving shared tags and history.
+        for (String sql : new String[] {
+            "DELETE FROM ONLY public.\"Material\" WHERE product_id = ?",
+            "DELETE FROM ONLY public.\"TagFor\" WHERE product_id = ?"
+        }) {
+          try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, request.productId());
+            statement.setQueryTimeout(5);
+            statement.executeUpdate();
+          }
+        }
+
+        try (PreparedStatement statement = connection.prepareStatement(
+            """
+            DELETE FROM ONLY public."Product"
+            WHERE product_id = ?
+            """)) {
+          statement.setInt(1, request.productId());
+          statement.setQueryTimeout(5);
+          if (statement.executeUpdate() != 1) {
+            throw new SQLException("Could not delete the product.");
+          }
+        }
 
         connection.commit();
         return true;
@@ -685,7 +816,7 @@ public final class ProductRepository {
         try (PreparedStatement statement =
             connection.prepareStatement(
                 """
-                SELECT product_id
+                SELECT product_id, parent_id
                 FROM ONLY public."Product"
                 WHERE product_id = ?
                 FOR UPDATE
@@ -698,6 +829,7 @@ public final class ProductRepository {
               connection.rollback();
               return false;
             }
+            requireActiveParent(connection, result.getInt("parent_id"), 0);
           }
         }
 
@@ -706,17 +838,39 @@ public final class ProductRepository {
             INSERT INTO public."Product"
               (product_id, name, sell_price, units_sold, inventory, parent_id, archived)
             SELECT
-              ?, p.name, p.sell_price, 0, p.inventory, p.parent_id, p.archived
+              ?, CONCAT('Copy of ', p.name), p.sell_price, 0, p.inventory, p.parent_id, p.archived
             FROM ONLY
               public."Product" as p
             WHERE
               p.product_id = ?;
+              
+            INSERT INTO public."Material"
+              (material_name, product_id, material_cost, unit_term, unit_quantity, used_quantity)
+            SELECT
+              m.material_name, ?, m.material_cost, m.unit_term, m.unit_quantity, m.used_quantity
+            FROM ONLY
+              public."Material" as m
+            WHERE
+              m.product_id = ?;
+              
+            INSERT INTO public."TagFor"
+              (tag_id, product_id)
+            SELECT
+              t.tag_id, ?
+            FROM ONLY
+              public."TagFor" as t
+            WHERE
+              t.product_id = ?;
             """;
 
         try (PreparedStatement statement =
             connection.prepareStatement(updateSql)) {
           statement.setInt(1, newId);
           statement.setInt(2, request.productId());
+          statement.setInt(3, newId);
+          statement.setInt(4, request.productId());
+          statement.setInt(5, newId);
+          statement.setInt(6, request.productId());
           statement.setQueryTimeout(5);
 
           if (statement.executeUpdate() != 1) {
@@ -733,6 +887,48 @@ public final class ProductRepository {
           exception.addSuppressed(rollbackException);
         }
         throw exception;
+      }
+    }
+  }
+
+  /** Validates a new parent assignment while holding its row lock until commit. */
+  private static void requireActiveParent(Connection connection, int parentId, int productId)
+      throws SQLException {
+    if (parentId == 0) return;
+    if (parentId == productId) {
+      throw new IllegalArgumentException("A product cannot be its own parent.");
+    }
+    try (PreparedStatement statement = connection.prepareStatement("""
+        SELECT archived, parent_id
+        FROM ONLY public."Product"
+        WHERE product_id = ?
+        FOR UPDATE
+        """)) {
+      statement.setInt(1, parentId);
+      statement.setQueryTimeout(5);
+      try (ResultSet result = statement.executeQuery()) {
+        if (!result.next()) {
+          throw new IllegalArgumentException("The selected parent product no longer exists.");
+        }
+        if (result.getBoolean("archived")) {
+          throw new IllegalArgumentException("Restore the parent product before adding or restoring a subproduct.");
+        }
+        if (result.getInt("parent_id") != 0) {
+          throw new IllegalArgumentException("A subproduct cannot be selected as a parent.");
+        }
+      }
+    }
+    if (productId != 0) {
+      try (PreparedStatement statement = connection.prepareStatement("""
+          SELECT 1 FROM ONLY public."Product" WHERE parent_id = ? LIMIT 1
+          """)) {
+        statement.setInt(1, productId);
+        statement.setQueryTimeout(5);
+        try (ResultSet result = statement.executeQuery()) {
+          if (result.next()) {
+            throw new IllegalArgumentException("A product with subproducts cannot become a subproduct.");
+          }
+        }
       }
     }
   }

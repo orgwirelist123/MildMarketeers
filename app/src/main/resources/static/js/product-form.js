@@ -1,4 +1,5 @@
 "use strict";
+import { createTagEditor } from "./tag-form.js";
 
 import { makeRequest, readResponse, GetDefaultHeaderType, ERROR_MESSAGES } from './util/network-helper.js';
 
@@ -13,6 +14,11 @@ import { makeRequest, readResponse, GetDefaultHeaderType, ERROR_MESSAGES } from 
   );
   const parentList = document.querySelector(".parent-list");
   const parentSelected = document.querySelector(".parent-selected");
+  const parentSearch = form.querySelector('.parent-picker input[type="search"]');
+  const parentSearchStatus = document.createElement("p");
+  parentSearchStatus.setAttribute("role", "status");
+  parentSearchStatus.hidden = true;
+  parentList.after(parentSearchStatus);
 
   const nameInput = form.elements.namedItem("name");
   const quantityInput = form.elements.namedItem("quantity");
@@ -33,8 +39,12 @@ import { makeRequest, readResponse, GetDefaultHeaderType, ERROR_MESSAGES } from 
   const submitButtons = form.querySelectorAll('button[type="submit"]');
 
   const message = document.createElement("p");
+  message.className = "status-message";
   message.setAttribute("role", "status");
   form.querySelector(".form-footer").before(message);
+
+  const tagEditor = createTagEditor(form);
+  tagEditor.reset();
 
   let editingId = null;
   let busy = false;
@@ -49,6 +59,7 @@ import { makeRequest, readResponse, GetDefaultHeaderType, ERROR_MESSAGES } from 
   let parentRequest = 0;
 
   const inheritedNote = document.createElement("p");
+  inheritedNote.className = "inherited-note";
   inheritedNote.setAttribute("role", "status");
   inheritedNote.hidden = true;
   componentList.before(inheritedNote);
@@ -59,8 +70,8 @@ import { makeRequest, readResponse, GetDefaultHeaderType, ERROR_MESSAGES } from 
   priceInput.step = "0.01";
   priceInput.max = "9999999999.99";
 
-  // These are the fields currently supported by the backend.
-  const supportedInputs = [nameInput, quantityInput, priceInput, subproductInput];
+  // Enable saved fields and the local parent-search control when the form is ready.
+  const supportedInputs = [nameInput, quantityInput, priceInput, subproductInput, parentSearch];
 
   form.querySelectorAll("input").forEach((input) => {
     if (!supportedInputs.includes(input)) {
@@ -80,6 +91,7 @@ import { makeRequest, readResponse, GetDefaultHeaderType, ERROR_MESSAGES } from 
     "two decimal places. Other product details are not connected yet.";
 
   function updateControls() {
+    tagEditor.setDisabled(busy || !ready);
     supportedInputs.forEach((input) => {
       input.disabled = busy || !ready;
     });
@@ -97,7 +109,26 @@ import { makeRequest, readResponse, GetDefaultHeaderType, ERROR_MESSAGES } from 
     });
   }
 
-  
+
+  function filterParentProducts() {
+    const query = parentSearch.value.trim().toLowerCase();
+    let matches = 0;
+    parentList.querySelectorAll(".parent-option").forEach((option) => {
+      const isNone = Number(option.dataset.productId) === 0;
+      const matchesQuery = option.textContent.toLowerCase().includes(query);
+      // Keep the explicit no-parent option available while searching.
+      option.style.display = isNone || matchesQuery ? "" : "none";
+      if (!isNone && matchesQuery) matches++;
+    });
+    parentSearchStatus.textContent = matches ? "" : "No matching parent products.";
+    parentSearchStatus.hidden = matches > 0;
+  }
+
+  parentSearch.addEventListener("input", filterParentProducts);
+  parentSearch.addEventListener("keydown", (event) => {
+    if (event.key === "Enter") event.preventDefault();
+  });
+
   async function refreshParentProducts(productId = 0) {
     const response = await fetch(`/api/products/listAvailableParents/${productId}`);
     const products = await readResponse(response);
@@ -114,6 +145,7 @@ import { makeRequest, readResponse, GetDefaultHeaderType, ERROR_MESSAGES } from 
       option.textContent = product.name;
       parentList.appendChild(entry);
     });
+    filterParentProducts();
   }
 
   function showPanel() {
@@ -165,7 +197,7 @@ import { makeRequest, readResponse, GetDefaultHeaderType, ERROR_MESSAGES } from 
       const total = materials.reduce((sum, material) => sum + moneyToCents(material.materialCost), 0n);
       if (request !== parentRequest) return;
       inheritedCost = total;
-      inheritedNote.textContent = `Inherited from ${parentSelected.textContent}: ${formatMoney(total)} per unit. Edit these components on the parent product.`;
+      inheritedNote.textContent = `Includes ${formatMoney(total)} per unit from ${parentSelected.textContent}. To change these costs, edit the parent product.`;
     } catch (error) {
       if (request !== parentRequest) return;
       parentCostError = true;
@@ -180,6 +212,8 @@ import { makeRequest, readResponse, GetDefaultHeaderType, ERROR_MESSAGES } from 
   }
 
   function resetComponentState() {
+    parentSearch.value = "";
+    parentSearchStatus.hidden = true;
     ++parentRequest; // Ignore responses belonging to a previous form session.
     parentId = 0;
     subproductInput.checked = false;
@@ -248,7 +282,7 @@ import { makeRequest, readResponse, GetDefaultHeaderType, ERROR_MESSAGES } from 
       name.value = componentData.materialName;
 
       let price = entry.querySelector('[name="component-price"]');
-      price.value = componentData.materialCost;
+      price.value = Number(componentData.materialCost).toFixed(2);
       price.placeholder = componentData.materialCost;
 
       console.log(componentDatas);
@@ -323,10 +357,12 @@ import { makeRequest, readResponse, GetDefaultHeaderType, ERROR_MESSAGES } from 
     panel.classList.remove("is-viewing");
     form.reset();
     resetComponentState();
+    tagEditor.reset();
     message.textContent = "Loading product form…";
     updateControls();
     showPanel();
     try {
+      await tagEditor.load();
       await refreshParentProducts();
       await setTargetParent(targetParentId);
       ready = true;
@@ -366,6 +402,7 @@ import { makeRequest, readResponse, GetDefaultHeaderType, ERROR_MESSAGES } from 
     panel.classList.add("is-viewing");
     form.reset();
     resetComponentState();
+    tagEditor.reset();
     message.textContent = "Loading product…";
     updateControls();
     showPanel(productId);
@@ -373,24 +410,25 @@ import { makeRequest, readResponse, GetDefaultHeaderType, ERROR_MESSAGES } from 
     try {
       const response = await fetch(`/api/products/${id}`);
       const product = await readResponse(
-        response, 
-        ERROR_MESSAGES.GENERAL.INVALID_RESPONSE, 
-        ERROR_MESSAGES.PRODUCT.MISSING_PRODUCT, 
+        response,
+        ERROR_MESSAGES.GENERAL.INVALID_RESPONSE,
+        ERROR_MESSAGES.PRODUCT.MISSING_PRODUCT,
         ERROR_MESSAGES.GENERAL.REQUEST_FAILURE
       );
 
       nameInput.value = product.name;
       quantityInput.value = product.inventory;
-      priceInput.value = product.sellPrice;
+      priceInput.value = Number(product.sellPrice).toFixed(2);
 
+      await tagEditor.load(id);
       await refreshParentProducts(id);
       await setTargetParent(product.parentId);
 
       const responseComponents = await fetch(`/api/materials/list/${id}`);
       const productComponents = await readResponse(
-        responseComponents, 
-        ERROR_MESSAGES.GENERAL.INVALID_RESPONSE, 
-        ERROR_MESSAGES.PRODUCT.MISSING_PRODUCT, 
+        responseComponents,
+        ERROR_MESSAGES.GENERAL.INVALID_RESPONSE,
+        ERROR_MESSAGES.PRODUCT.MISSING_PRODUCT,
         ERROR_MESSAGES.GENERAL.REQUEST_FAILURE
       );
       console.log(productComponents);
@@ -498,6 +536,8 @@ import { makeRequest, readResponse, GetDefaultHeaderType, ERROR_MESSAGES } from 
       sellPrice: priceInput.value,
       inventory: Number(quantityInput.value),
       parentId: parentId,
+      tags: tagEditor.values(),
+      tagColors: tagEditor.colors(),
       materials: getComponentsData()
     };
 

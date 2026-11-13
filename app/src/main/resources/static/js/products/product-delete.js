@@ -58,8 +58,7 @@ import { refreshProducts } from './products-helper.js';
 
             refreshProducts();
         } catch (error) {
-            // Preserve entries after an unsuccessful save.
-            // message.textContent = error.message || "Could not reach the server.";
+            sendNotification(error.message || "Could not reach the server.");
         } finally {
 
         }

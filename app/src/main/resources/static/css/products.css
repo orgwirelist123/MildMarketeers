@@ -85,7 +85,7 @@
     visibility: hidden;
 }
 
-.archived > .row .duplicate {
+.archived > .row .duplicate, .archived > .row .add-subproduct {
     display: none;
 }
 
@@ -475,6 +475,16 @@
     color: var(--text);
 }
 
+.inherited-note {
+    margin: 0;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--page-top);
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+}
+
 /* Price */
 .price-row {
     display: flex;
@@ -565,6 +575,12 @@
     display: flex;
     flex-direction: column;
     gap: 22px;
+}
+
+.sale-price-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
 }
 
 .sale-product {
