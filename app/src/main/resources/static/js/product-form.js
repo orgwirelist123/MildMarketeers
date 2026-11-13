@@ -17,9 +17,7 @@ import { makeRequest, readResponse, GetDefaultHeaderType, ERROR_MESSAGES } from 
   const quantityInput = form.elements.namedItem("quantity");
   const priceInput = form.elements.namedItem("price");
   const subproductInput = form.elements.namedItem("is-subproduct");
-  const tagNameInput = form.elements.namedItem("tagname");
 
-  const inputButtons = form.querySelectorAll('button[type="button"]');
   const submitButtons = form.querySelectorAll('button[type="submit"]');
 
   const message = document.createElement("p");
@@ -40,7 +38,7 @@ import { makeRequest, readResponse, GetDefaultHeaderType, ERROR_MESSAGES } from 
   priceInput.max = "9999999999.99";
 
   // These are the fields currently supported by the backend.
-  const supportedInputs = [nameInput, quantityInput, priceInput, subproductInput, tagNameInput];
+  const supportedInputs = [nameInput, quantityInput, priceInput, subproductInput];
 
   form.querySelectorAll("input").forEach((input) => {
     if (!supportedInputs.includes(input)) {
@@ -62,9 +60,6 @@ import { makeRequest, readResponse, GetDefaultHeaderType, ERROR_MESSAGES } from 
       input.disabled = busy || !ready;
     });
     submitButtons.forEach((button) => {
-      button.disabled = busy || !ready;
-    });
-    inputButtons.forEach((button) => {
       button.disabled = busy || !ready;
     });
     addButton.disabled = busy;

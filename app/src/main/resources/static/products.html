@@ -369,20 +369,22 @@
                 <div class="field">
                     <span class="field-label">Tags <span class="optional">(Optional)</span></span>
                     <div class="input tag-field">
+                        <span class="tag tag-chosen tag-green"><span class="tag-name">Tag 1</span><button type="button" class="tag-remove" title="Remove tag"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></button></span> <!-- REMOVE -->
+                        <span class="tag tag-chosen tag-purple"><span class="tag-name">Tag 2</span><button type="button" class="tag-remove" title="Remove tag"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></button></span> <!-- REMOVE -->
+
                         <details class="dropdown add-tag" name="dropdown">
                             <summary class="tag tag-add">+ Add tag</summary>
 
                             <!-- Add tag menu -->
                             <div class="menu add-tag-menu">
-                                <!-- Uncomment when search tags is implemented -->
-                                <!--<div class="search search-small">
+                                <div class="search search-small">
                                     <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
                                     <input type="search" placeholder="Search tags...">
-                                </div>-->
+                                </div>
                                 <div class="tag-option-list">
-                                    <!--<button type="button"><span class="tag-dot tag-green"></span><span class="tag-name">Tag 1</span></button>--> <!-- REMOVE -->
-                                    <!--<button type="button"><span class="tag-dot tag-purple"></span><span class="tag-name">Tag 2</span></button>--> <!-- REMOVE -->
-                                    <!--<button type="button"><span class="tag-dot tag-blue"></span><span class="tag-name">Tag 3</span></button>--> <!-- REMOVE -->
+                                    <button type="button"><span class="tag-dot tag-green"></span><span class="tag-name">Tag 1</span></button> <!-- REMOVE -->
+                                    <button type="button"><span class="tag-dot tag-purple"></span><span class="tag-name">Tag 2</span></button> <!-- REMOVE -->
+                                    <button type="button"><span class="tag-dot tag-blue"></span><span class="tag-name">Tag 3</span></button> <!-- REMOVE -->
                                 </div>
 
                                 <!-- Create new tag -->
@@ -390,11 +392,10 @@
                                     <summary><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Create new tag</summary>
 
                                     <div class="new-tag-form">
-                                        <input type="text" class="input" name = "tagname" placeholder="Tag name">
+                                        <input type="text" class="input" placeholder="Tag name">
 
                                         <!-- Color selection -->
-                                        <!-- Uncomment when assigning tag-color is implemented -->
-                                        <!--<div class="color-types">
+                                        <div class="color-types">
                                             <input type="radio" name="tag-color" value="green" class="color-type tag-green" aria-label="Green" checked>
                                             <input type="radio" name="tag-color" value="blue" class="color-type tag-blue" aria-label="Blue">
                                             <input type="radio" name="tag-color" value="purple" class="color-type tag-purple" aria-label="Purple">
@@ -403,7 +404,7 @@
                                             <input type="radio" name="tag-color" value="orange" class="color-type tag-orange" aria-label="Orange">
                                             <input type="radio" name="tag-color" value="yellow" class="color-type tag-yellow" aria-label="Yellow">
                                             <input type="radio" name="tag-color" value="gray" class="color-type tag-gray" aria-label="Gray">
-                                        </div>-->
+                                        </div>
 
                                         <!-- Create new tag button -->
                                         <button type="button" class="btn btn-dark">Create</button>
@@ -675,7 +676,6 @@
 <script src="js/product-form.js" type="module" defer></script>
 <script src="js/product-list.js" type="module" defer></script>
 <script src="js/register-sale.js" defer></script>
-<script src="js/tag-form.js" type="module" defer></script>
 <script src="js/products/product-delete.js" type="module" defer></script>
 <script src="js/products/product-archive.js" type="module" defer></script>
 <script src="js/products/product-duplicate.js" type="module" defer></script>
