@@ -39,7 +39,7 @@ public record EditMaterialRequest(
         }
 
         if (materialCost == null) {
-            throw new IllegalArgumentException("Selling price is required.");
+            throw new IllegalArgumentException("Enter a cost for the component \"" + materialName + "\".");
         }
 
         // Matches the current PostgreSQL numeric(12,2) column.
@@ -47,7 +47,7 @@ public record EditMaterialRequest(
             || materialCost.compareTo(new BigDecimal("9999999999.99")) > 0
             || materialCost.stripTrailingZeros().scale() > 2) {
             throw new IllegalArgumentException(
-                "Selling price must be between 0 and 9999999999.99 "
+                "Component cost must be between 0 and 9999999999.99 "
                     + "with at most two decimal places.");
         }
 
