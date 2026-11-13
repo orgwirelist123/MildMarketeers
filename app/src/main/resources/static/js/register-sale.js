@@ -4,6 +4,7 @@
   const panel = document.querySelector("#panel-register-sale");
   const form = panel.querySelector(".sale-form");
   const productName = form.querySelector(".sale-product-name");
+  const productThumb = form.querySelector(".thumb");
   const productStock = form.querySelector("#sale-stock-num");
   const quantityInput = form.elements.namedItem("quantity");
   const priceInput = form.elements.namedItem("price");
@@ -13,6 +14,8 @@
   const controls = [...form.querySelectorAll("input, button")];
 
   const message = document.createElement("p");
+  message.className = "status-message";
+  
   message.setAttribute("role", "status");
   message.setAttribute("aria-live", "polite");
   submitButton.before(message);
@@ -25,6 +28,11 @@
   priceInput.max = "9999999999.99";
   priceInput.setAttribute("aria-label", "Price per unit before discount");
   quantityInput.required = true;
+
+  // First letter of the product name shown in the thumbnail
+  function thumbLetter(name) {
+    return Array.from(name.trim())[0]?.toUpperCase() ?? '?';
+  }
 
   // Use integer cents to avoid floating-point rounding.
   function cents(value) {
@@ -94,6 +102,7 @@
     ready = false;
     productId = null;
     productName.textContent = "";
+    productThumb.textContent = "";
     productStock.textContent = "—";
     totalPrice.textContent = "—";
     message.textContent = "";
@@ -123,10 +132,11 @@
       productId = id;
       stock = product.inventory;
       productName.textContent = product.name;
+      productThumb.textContent = thumbLetter(product.name);
       productStock.textContent = stock;
       quantityInput.max = String(stock);
       quantityInput.value = "1";
-      priceInput.value = product.sellPrice;
+      priceInput.value = Number(product.sellPrice).toFixed(2);
       discountInput.value = "0.00";
 
       ready = stock > 0;

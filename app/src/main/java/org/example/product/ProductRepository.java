@@ -25,7 +25,7 @@ public final class ProductRepository {
         """
         SELECT product_id, name, sell_price, inventory, units_sold, archived, parent_id
         FROM ONLY public."Product"
-        WHERE name LIKE ?
+        WHERE name ILIKE ?
         """;
     
     ArrayList<ProductDetails> products = new ArrayList<ProductDetails>();

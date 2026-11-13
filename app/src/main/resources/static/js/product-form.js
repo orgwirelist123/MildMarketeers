@@ -33,6 +33,7 @@ import { makeRequest, readResponse, GetDefaultHeaderType, ERROR_MESSAGES } from 
   const submitButtons = form.querySelectorAll('button[type="submit"]');
 
   const message = document.createElement("p");
+  message.className = "status-message";
   message.setAttribute("role", "status");
   form.querySelector(".form-footer").before(message);
 
@@ -49,6 +50,7 @@ import { makeRequest, readResponse, GetDefaultHeaderType, ERROR_MESSAGES } from 
   let parentRequest = 0;
 
   const inheritedNote = document.createElement("p");
+  inheritedNote.className = "inherited-note";
   inheritedNote.setAttribute("role", "status");
   inheritedNote.hidden = true;
   componentList.before(inheritedNote);
@@ -165,7 +167,7 @@ import { makeRequest, readResponse, GetDefaultHeaderType, ERROR_MESSAGES } from 
       const total = materials.reduce((sum, material) => sum + moneyToCents(material.materialCost), 0n);
       if (request !== parentRequest) return;
       inheritedCost = total;
-      inheritedNote.textContent = `Inherited from ${parentSelected.textContent}: ${formatMoney(total)} per unit. Edit these components on the parent product.`;
+      inheritedNote.textContent = `Includes ${formatMoney(total)} per unit from ${parentSelected.textContent}. To change these costs, edit the parent product.`;
     } catch (error) {
       if (request !== parentRequest) return;
       parentCostError = true;
@@ -248,7 +250,7 @@ import { makeRequest, readResponse, GetDefaultHeaderType, ERROR_MESSAGES } from 
       name.value = componentData.materialName;
 
       let price = entry.querySelector('[name="component-price"]');
-      price.value = componentData.materialCost;
+      price.value = Number(componentData.materialCost).toFixed(2);
       price.placeholder = componentData.materialCost;
 
       console.log(componentDatas);
@@ -381,7 +383,7 @@ import { makeRequest, readResponse, GetDefaultHeaderType, ERROR_MESSAGES } from 
 
       nameInput.value = product.name;
       quantityInput.value = product.inventory;
-      priceInput.value = product.sellPrice;
+      priceInput.value = Number(product.sellPrice).toFixed(2);
 
       await refreshParentProducts(id);
       await setTargetParent(product.parentId);

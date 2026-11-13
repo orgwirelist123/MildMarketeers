@@ -545,6 +545,11 @@ svg {
     background: var(--overlay);
 }
 
+/* Stops the page behind from scrolling while a panel is open */
+html:has(.panel:popover-open) {
+    overflow: hidden;
+}
+
 .panel:popover-open {
     animation: slide-in 0.25s ease-out;
 }
@@ -670,6 +675,21 @@ svg {
 
 @keyframes notification-out {
     to { transform: translateY(20px); opacity: 0;}
+}
+
+/* ===== Status Messages ===== */
+.status-message {
+    margin: 0;
+    padding: 10px 14px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--page-top);
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+.status-message:empty {
+    display: none;
 }
 
 /* ===== Responsiveness ===== */
