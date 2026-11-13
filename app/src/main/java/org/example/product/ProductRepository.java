@@ -838,17 +838,39 @@ public final class ProductRepository {
             INSERT INTO public."Product"
               (product_id, name, sell_price, units_sold, inventory, parent_id, archived)
             SELECT
-              ?, p.name, p.sell_price, 0, p.inventory, p.parent_id, p.archived
+              ?, CONCAT('Copy of ', p.name), p.sell_price, 0, p.inventory, p.parent_id, p.archived
             FROM ONLY
               public."Product" as p
             WHERE
               p.product_id = ?;
+              
+            INSERT INTO public."Material"
+              (material_name, product_id, material_cost, unit_term, unit_quantity, used_quantity)
+            SELECT
+              m.material_name, ?, m.material_cost, m.unit_term, m.unit_quantity, m.used_quantity
+            FROM ONLY
+              public."Material" as m
+            WHERE
+              m.product_id = ?;
+              
+            INSERT INTO public."TagFor"
+              (tag_id, product_id)
+            SELECT
+              t.tag_id, ?
+            FROM ONLY
+              public."TagFor" as t
+            WHERE
+              t.product_id = ?;
             """;
 
         try (PreparedStatement statement =
             connection.prepareStatement(updateSql)) {
           statement.setInt(1, newId);
           statement.setInt(2, request.productId());
+          statement.setInt(3, newId);
+          statement.setInt(4, request.productId());
+          statement.setInt(5, newId);
+          statement.setInt(6, request.productId());
           statement.setQueryTimeout(5);
 
           if (statement.executeUpdate() != 1) {
