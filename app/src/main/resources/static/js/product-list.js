@@ -1,10 +1,11 @@
 "use strict";
 
+import { displayProducts, refreshProducts } from './products/products-helper.js';
+import { readResponse, ERROR_MESSAGES } from './util/network-helper.js'
+
 (() => {
-    const productList = document.querySelector('.product-list');
-    const template = document.getElementById('template-product');
-    const parentTemplate = document.getElementById('template-product-group');
-    const subTemplate = document.getElementById('template-subproduct');
+    // const productList = document.querySelector('.product-list');
+    // const template = document.getElementById('template-product');
     const refreshButton = document.querySelector('.header-actions [title="Refresh"]');
     const searchBar = document.querySelector('input[type="search"]');
 
@@ -12,97 +13,120 @@
     // Refresh button input
     refreshButton.addEventListener("click", (event) => {
         event.preventDefault();
-        refresh();
-        });
+        refreshProducts();
+    });
 
     // Search bar input
     searchBar.addEventListener('input', (event) =>{
         const query = event.target.value;
         search(query);
-        });
+    });
 
     // Reload the list after a product is added or edited.
     document.addEventListener("products:changed", () => {
-        refresh().catch(console.error);
+        refreshProducts().catch(console.error);
     });
 
-    
-     /* READ RESPONSE */
-    async function readResponse(response) {
-        const text = await response.text();
-        let result = {};
+    // // Displays all the products in the given array of ProductDetails
+    // async function displayProducts(products){
+    //     try{
+    //         // Clear the previously displayed products
+    //         clearDisplay();
+    //         console.log(products);
+    //         // Go through each ProductDetails in the list
+    //         products.forEach(product => {
+    //             // Create a new template instance for this product
+    //             const productEntry = template.content.cloneNode(true);
+    //             const viewButton = productEntry.querySelector(".btn-view");
+    //             if (viewButton) {
+    //                 viewButton.dataset.productId = product.productId;
+    //             }
 
-        try {
-        result = text ? JSON.parse(text) : {};
-        } catch {
-        throw new Error("The server returned an unexpected response.");
-        }
+    //             const registerButton = productEntry.querySelector(".btn-sale");
+    //             if(registerButton) {
+    //                 registerButton.dataset.productId = product.productId;
+    //             }
 
-        if (!response.ok) {
-        throw new Error(
-            result.message ||
-            (response.status === 404
-            ? "This product no longer exists."
-            : "Could not complete the request.")
-        );
-        }
-        return result;
-    }
+    //             // Fill in data to their appropriate positions
+    //             productEntry.querySelector('.name').textContent = product.name;
+    //             productEntry.querySelector('.stock').textContent = product.inventory;
+    //             productEntry.querySelector('.price').textContent =
+    //                 new Intl.NumberFormat("en-US", {
+    //                     style: "currency",
+    //                     currency: "USD"
+    //                 }).format(product.sellPrice);
 
-    /* DISPLAY FUNCTION */
-    // Displays all the products in the given array of ProductDetails
-    async function displayProducts(products){
-        try{
-            // Clear the previously displayed products
-            clearDisplay();
+    //             if (product.archived) {
+    //                 // console.log(productEntry.querySelectorAll());
+    //                 // console.log(productEntry.children);
+    //                 productEntry.querySelector('.product').classList.add("archived")
+    //             }
 
-            // Go through each ProductDetails in the list of products
-            products.forEach(product => {
-                // Create a new template instance for this product
-                const productEntry = template.content.cloneNode(true);
-                const viewButton = productEntry.querySelector(".btn-view");
-                if (viewButton) {
-                    viewButton.dataset.productId = product.productId;
-                }
+    //             // Append the new template instance to the product-list
+    //             productList.appendChild(productEntry);
+    //         });
+    //     } catch (error) {
+    //         console.log(error.message);
+    //     }
+    // }
 
-                const registerButton = productEntry.querySelector(".btn-sale");
-                if(registerButton) {
-                    registerButton.dataset.productId = product.productId;
-                }
+    // async function readResponse(response) {
+    //     const text = await response.text();
+    //     let result = {};
 
-                // Fill in data to their appropriate positions
-                productEntry.querySelector('.name').textContent = product.name;
-                productEntry.querySelector('.stock').textContent = product.inventory;
-                productEntry.querySelector('.price').textContent =
-                    new Intl.NumberFormat("en-US", {
-                        style: "currency",
-                        currency: "USD"
-                    }).format(product.sellPrice);
+    //     try {
+    //     result = text ? JSON.parse(text) : {};
+    //     } catch {
+    //     throw new Error("The server returned an unexpected response.");
+    //     }
 
-                if (product.archived) {
-                    productEntry.querySelector('.product').classList.add("archived")
-                }
+    //     console.log("Result has been constructed! Checking response status...");
+    //     if (!response.ok) {
+    //     throw new Error(
+    //         result.message ||
+    //         (response.status === 404
+    //         ? "This product no longer exists."
+    //         : "Could not complete the request.")
+    //     );
+    //     }
+    //     return result;
+    // }
 
-                // Append the new template instance to the product-list
-                productList.appendChild(productEntry);
-            });
-        } catch (error) {
-            console.log(error.message);
-        }
-    }
+        // Add an event listener to the refresh button.
+    refreshButton.addEventListener("click", (event) => {
+        event.preventDefault();
+        refreshProducts();
+    });
 
+    // async function refresh()
+    // {
+    //     // Get the products from the ProductController
+    //     const response = await fetch(`/api/products/list`);
+    //     const products = await readResponse(response);
+    //     displayProducts(products);
+    // }
+
+    // function clearDisplay()
+    // {
+    //     productList.innerHTML = "";
+    // }
+
+    // Reload the list after a product is added or edited.
+    document.addEventListener("products:changed", () => {
+        refreshProducts().catch(console.error);
+    });
     /* HELPER FUNCTIONS */
-    function clearDisplay(){
-        productList.innerHTML = "";
-    }
+    // function clearDisplay(){
+    //     productList.innerHTML = "";
+    // }
 
     /* FETCHING FUNCTIONS */
-    async function refresh(){
-        // Get the products from the ProductController
-        const response = await fetch(`/api/products/list`);
-        const products = await readResponse(response);
-        displayProducts(products);
-    }
+    // async function refresh(){
+    //     // Get the products from the ProductController
+    //     const response = await fetch(`/api/products/list`);
+    //     const products = await readResponse(response);
+    //     displayProducts(products);
+    // }
 
     async function search(query){
         // If the search bar input is empty refresh to show all products
@@ -111,16 +135,21 @@
             const response = await fetch(`/api/products/search`, {
                                         method: "PUT",
                                         body: query});
-            const products = await readResponse(response);
+            const products = await readResponse(
+                response,
+                ERROR_MESSAGES.GENERAL.INVALID_RESPONSE, 
+                ERROR_MESSAGES.PRODUCT.MISSING_PRODUCT, 
+                ERROR_MESSAGES.GENERAL.REQUEST_FAILURE
+            );
 
             // Display the queries products to the main page
             displayProducts(products.data);
         } else {
-            refresh();
+            refreshProducts();
         }
     }
 
     // Load saved products when the page first opens.
-    refresh().catch(console.error);
+    refreshProducts().catch(console.error);
     
 })();

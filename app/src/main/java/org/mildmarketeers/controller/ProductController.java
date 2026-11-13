@@ -35,7 +35,7 @@ public class ProductController {
   private final ProductRepository repository = new ProductRepository();
 
   /** Input shared by the Add Product and Edit Product forms. */
-  public record ProductInput(String name, BigDecimal sellPrice, Integer inventory) {}
+  public record ProductInput(String name, BigDecimal sellPrice, Integer inventory, Integer parentId) {}
   /** Selector shared by the Delete Product, Archive Product, and Duplicate Product forms. */
   public record ProductSelector(int productId) {}
 
@@ -48,11 +48,20 @@ public class ProductController {
         .orElseGet(() -> ResponseEntity.notFound().build());
   }
 
-  /**  */
+  /** Retrieves a list of all products. */
   @GetMapping ("/list")
   // @ExceptionHandler({SQLException.class, IllegalStateException.class})
   public ResponseEntity<ArrayList<ProductDetails>> displayProducts() throws SQLException{
     ArrayList<ProductDetails> products = repository.retrieveProducts();
+    return ResponseEntity.ok(products);
+  }
+
+  @GetMapping ("/listAvailableParents/{productId}")
+  public ResponseEntity<ArrayList<ProductDetails>> displayParentProducts(
+      @PathVariable("productId") int productId) throws SQLException{
+    ArrayList<ProductDetails> products = repository.retrieveAvailableParentProducts(productId);
+    System.out.println("retrieved parent products");
+    System.out.println(products.size());
     return ResponseEntity.ok(products);
   }
 
@@ -63,7 +72,7 @@ public class ProductController {
     requireInventory(input);
 
     AddProductRequest request =
-        new AddProductRequest(input.name(), input.sellPrice(), input.inventory());
+        new AddProductRequest(input.name(), input.sellPrice(), input.inventory(), input.parentId());
 
     if (!repository.add(request)) {
       throw new SQLException("The repository did not add the product.");
@@ -82,7 +91,7 @@ public class ProductController {
 
     EditProductRequest request =
         new EditProductRequest(
-            productId, input.name(), input.sellPrice(), input.inventory());
+            productId, input.name(), input.sellPrice(), input.inventory(), input.parentId());
 
     if (!repository.update(request)) {
       return ResponseEntity.status(404)

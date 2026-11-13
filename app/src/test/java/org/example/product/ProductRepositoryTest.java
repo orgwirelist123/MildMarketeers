@@ -1,15 +1,15 @@
 package org.example.product;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.assumeTrue;
-
 import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.util.Optional;
 import java.util.concurrent.ThreadLocalRandom;
+
 import org.example.database.DatabaseConnection;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeTrue;
 import org.junit.Test;
 
 /** Integration tests for retrieving current product details. */
@@ -103,7 +103,7 @@ public class ProductRepositoryTest {
         ProductRepository repository = new ProductRepository();
         EditProductRequest request =
             new EditProductRequest(
-                productId, "Updated Cookie", new BigDecimal("15"), 25);
+                productId, "Updated Cookie", new BigDecimal("15"), 25, 0);
 
         assertTrue("The update should succeed.", repository.update(request));
 
@@ -207,7 +207,7 @@ public class ProductRepositoryTest {
         ProductRepository repository = new ProductRepository();
         EditProductRequest request =
             new EditProductRequest(
-                productId, "Missing Product", new BigDecimal("10"), 5);
+                productId, "Missing Product", new BigDecimal("10"), 5, 0);
 
         assertEquals(false, repository.update(request));
 

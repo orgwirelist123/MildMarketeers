@@ -1,15 +1,23 @@
 "use strict";
 
+import { makeRequest, readResponse, GetDefaultHeaderType, ERROR_MESSAGES } from './util/network-helper.js';
+
 (() => {
+  const parentProductTemplate = document.getElementById('template-parent-option');
+
   const panel = document.querySelector("#panel-product");
   const form = panel.querySelector(".product-form");
   const addButton = document.querySelector(
     '.header-actions [popovertarget="panel-product"]'
   );
+  const parentList = document.querySelector(".parent-list");
+  const parentSelected = document.querySelector(".parent-selected");
 
   const nameInput = form.elements.namedItem("name");
   const quantityInput = form.elements.namedItem("quantity");
   const priceInput = form.elements.namedItem("price");
+  const subproductInput = form.elements.namedItem("is-subproduct");
+
   const submitButtons = form.querySelectorAll('button[type="submit"]');
 
   const message = document.createElement("p");
@@ -19,6 +27,9 @@
   let editingId = null;
   let busy = false;
   let ready = true;
+  let availableParents = {};
+  let parentId = 0;
+  let setParentForDirectAddSubproduct = false;
 
   nameInput.maxLength = 50;
   quantityInput.max = "2147483647";
@@ -27,10 +38,12 @@
   priceInput.max = "9999999999.99";
 
   // These are the fields currently supported by the backend.
-  const supportedInputs = [nameInput, quantityInput, priceInput];
+  const supportedInputs = [nameInput, quantityInput, priceInput, subproductInput];
 
   form.querySelectorAll("input").forEach((input) => {
-    if (!supportedInputs.includes(input)) input.disabled = true;
+    if (!supportedInputs.includes(input)) {
+      input.disabled = true;
+    }
   });
 
   form.querySelectorAll('button[type="button"]').forEach((button) => {
@@ -38,7 +51,7 @@
   });
 
   const note = document.createElement("p");
-    note.textContent =
+  note.textContent =
     "Currently saves name, quantity, and price. Prices can have up to " +
     "two decimal places. Other product details are not connected yet.";
 
@@ -52,30 +65,97 @@
     addButton.disabled = busy;
   }
 
-  function showPanel() {
-    if (!panel.matches(":popover-open")) panel.showPopover();
+  
+  function refreshParentProducts(productId = 0, targetParentId = 0) {
+    // When displaying the panel, also refresh the subproduct dropdown in the product panel
+    // Get the valid parent products
+    try {
+      const url = '/api/products/listAvailableParents/' + productId;
+      fetch(url).then((response) => {
+        readResponse(
+          response,
+          ERROR_MESSAGES.GENERAL.INVALID_RESPONSE, 
+          ERROR_MESSAGES.PRODUCT.MISSING_PRODUCT, 
+          ERROR_MESSAGES.GENERAL.REQUEST_FAILURE
+        ).then((products) => {
+          // Clear the previous .parent-list
+          parentList.innerHTML = "";
+          availableParents = {};
+
+          // Include a 'none' option for products without parents
+          products.unshift({
+            productId: 0,
+            name: "None"
+          });
+
+          // Generate the new button entries
+          products.forEach(product => {
+            availableParents[product.productId] = product.name;
+
+            // Create a new template instance for this product
+            const parentEntry = parentProductTemplate.content.cloneNode(true);
+            const parentOption = parentEntry.querySelector(".parent-option");
+            
+            // Attach the parent's product id
+            parentOption.dataset.productId = product.productId;
+
+            // Fill in the name
+            parentOption.textContent = product.name;
+
+            // Append the new template instance to the product-list
+            parentList.appendChild(parentEntry);
+          });
+
+          if (targetParentId != 0) {
+            setTargetParent(targetParentId);
+          }
+        })
+      })
+    } catch (error) {
+      message.textContent = error.message || "Could not load the product.";
+    } finally {
+      busy = false;
+      updateControls();
+    }
   }
 
-  async function readResponse(response) {
-    const text = await response.text();
-    let result = {};
+  function showPanel(productId) {
+    if (!panel.matches(":popover-open")) {
+      panel.showPopover();
 
-    try {
-      result = text ? JSON.parse(text) : {};
-    } catch {
-      throw new Error("The server returned an unexpected response.");
+      refreshParentProducts(productId);
     }
+  }
 
-    if (!response.ok) {
-      throw new Error(
-        result.message ||
-        (response.status === 404
-          ? "This product no longer exists."
-          : "Could not complete the request.")
-      );
-    }
+  // async function readResponse(response) {
+  //   const text = await response.text();
+  //   let result = {};
 
-    return result;
+  //   try {
+  //     result = text ? JSON.parse(text) : {};
+  //   } catch {
+  //     throw new Error("The server returned an unexpected response.");
+  //   }
+
+  //   if (!response.ok) {
+  //     throw new Error(
+  //       result.message ||
+  //       (response.status === 404
+  //         ? "This product no longer exists."
+  //         : "Could not complete the request.")
+  //     );
+  //   }
+
+  //   return result;
+  // }
+
+  function setTargetParent(productId) {
+    parentSelected.textContent = availableParents[productId];
+    parentId = productId;
+  }
+
+  function clearTargetParent() {
+    setTargetParent(0);
   }
 
   function openAdd() {
@@ -86,6 +166,13 @@
     panel.classList.remove("is-viewing");
     form.reset();
     message.textContent = "";
+
+    if (!setParentForDirectAddSubproduct) {
+      console.log("cleared target parent");
+      clearTargetParent();
+    }
+    setParentForDirectAddSubproduct = false;
+
     updateControls();
     showPanel();
   }
@@ -98,16 +185,16 @@
     const id = Number(rawId);
 
     if (!/^-?\d+$/.test(rawId) ||
-        !Number.isInteger(id) ||
-        id < -2147483648 ||
-        id > 2147483647) {
+      !Number.isInteger(id) ||
+      id < -2147483648 ||
+      id > 2147483647) {
       ready = false;
       editingId = null;
       form.reset();
       panel.classList.add("is-viewing");
       message.textContent = "This product row needs a valid product ID.";
       updateControls();
-      showPanel();
+      showPanel(productId);
       return;
     }
 
@@ -118,15 +205,22 @@
     form.reset();
     message.textContent = "Loading product…";
     updateControls();
-    showPanel();
+    showPanel(productId);
 
     try {
       const response = await fetch(`/api/products/${id}`);
-      const product = await readResponse(response);
+      const product = await readResponse(
+        response, 
+        ERROR_MESSAGES.GENERAL.INVALID_RESPONSE, 
+        ERROR_MESSAGES.PRODUCT.MISSING_PRODUCT, 
+        ERROR_MESSAGES.GENERAL.REQUEST_FAILURE
+      );
 
       nameInput.value = product.name;
       quantityInput.value = product.inventory;
       priceInput.value = product.sellPrice;
+
+      setTargetParent(product.parentId);
 
       ready = true;
       message.textContent = "";
@@ -154,6 +248,27 @@
     openEdit(button.dataset.productId ?? row?.dataset.productId);
   });
 
+  document.addEventListener("click", (event) => {
+    const button = event.target.closest(".parent-option");
+    if (!button) return;
+
+    event.preventDefault();
+
+    setTargetParent(button.dataset.productId);
+  });
+
+  document.addEventListener("click", (event) => {
+    const button = event.target.closest(".add-subproduct");
+    if (!button) return;
+
+    // event.preventDefault();
+    refreshParentProducts(0, button.dataset.productId);
+    setParentForDirectAddSubproduct = true;
+    // console.log("adding a subproduct for parent: " + button.dataset.productId);
+    // setTargetParent(button.dataset.productId);
+    // console.log(parentId);
+  });
+
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
 
@@ -164,7 +279,8 @@
     const payload = {
       name: nameInput.value.trim(),
       sellPrice: priceInput.value,
-      inventory: Number(quantityInput.value)
+      inventory: Number(quantityInput.value),
+      parentId: parentId
     };
 
     busy = true;

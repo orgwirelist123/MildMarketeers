@@ -11,7 +11,8 @@ import java.math.BigDecimal;
  * @param inventory current stock quantity
  * @param unitsSold current quantity of products sold
  * @param archived whether the product is archived
+ * @param parentId product identifier if parent product, 0 if none
  */
 public record ProductDetails(
     int productId, String name, BigDecimal sellPrice, int inventory,
-    int unitsSold, boolean archived) {}
+    int unitsSold, boolean archived, int parentId) {}
