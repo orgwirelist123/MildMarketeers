@@ -189,6 +189,19 @@ public final class ProductRepository {
    * @throws SQLException if saving or recording history fails
    */
   public boolean update(EditProductRequest request) throws SQLException {
+    return update(request, null);
+  }
+
+  /** Saves product fields and optional tag assignments in the same transaction. */
+  public boolean update(EditProductRequest request, java.util.List<String> tags)
+      throws SQLException {
+    return update(request, tags, null);
+  }
+
+  public boolean update(EditProductRequest request, java.util.List<String> tags,
+      java.util.Map<String, String> tagColors) throws SQLException {
+    tags = org.example.tags.TagRepository.validate(tags);
+    tagColors = org.example.tags.TagRepository.validateColors(tags, tagColors);
     java.util.Objects.requireNonNull(request, "Edit request is required.");
 
     try (Connection connection = DatabaseConnection.open()) {
@@ -281,6 +294,7 @@ public final class ProductRepository {
           }
         }
 
+        org.example.tags.TagRepository.replace(connection, request.productId(), tags, tagColors);
         connection.commit();
         return true;
       } catch (SQLException | RuntimeException exception) {
@@ -302,6 +316,19 @@ public final class ProductRepository {
    * @throws SQLException if adding or recording history fails
    */
   public int add(AddProductRequest request) throws SQLException {
+    return add(request, null);
+  }
+
+  /** Saves product fields and optional tag assignments in the same transaction. */
+  public int add(AddProductRequest request, java.util.List<String> tags)
+      throws SQLException {
+    return add(request, tags, null);
+  }
+
+  public int add(AddProductRequest request, java.util.List<String> tags,
+      java.util.Map<String, String> tagColors) throws SQLException {
+    tags = org.example.tags.TagRepository.validate(tags);
+    tagColors = org.example.tags.TagRepository.validateColors(tags, tagColors);
     java.util.Objects.requireNonNull(request, "Add request is required.");
 
     try (Connection connection = DatabaseConnection.open()) {
@@ -400,6 +427,7 @@ public final class ProductRepository {
             throw new SQLException("Could not record the product's previous state.");
           }
         }
+        org.example.tags.TagRepository.replace(connection, newId, tags, tagColors);
         connection.commit();
         return newId;
       } catch (SQLException | RuntimeException exception) {

@@ -1,4 +1,5 @@
 "use strict";
+import { fetchTagCatalog, applyTagColor } from "../tag-form.js";
 
 import { readResponse, ERROR_MESSAGES } from '../util/network-helper.js';
 
@@ -142,6 +143,7 @@ export async function displayProducts(products){
             if (productFamily.Data.archived) {
                 productEntry.querySelector('.product').classList.add("archived")
             }
+            renderTags(productEntry, productFamily.Data.tags || [], productFamily.Data.tagColors);
             const subproducts = productEntry.querySelector('.subproducts');
 
             // Make the children
@@ -180,6 +182,7 @@ export async function displayProducts(products){
                 }
 
                 // Append the new template instance to the subproducts list
+                renderTags(productEntry, child.tags || [], child.tagColors);
                 subproducts.appendChild(productEntry);
             })
 
@@ -255,7 +258,12 @@ async function refresh()
         ERROR_MESSAGES.PRODUCT.MISSING_PRODUCT, 
         ERROR_MESSAGES.GENERAL.REQUEST_FAILURE
     );
-    if (version === refreshVersion) await displayProducts(products);
+    const catalog = await fetchTagCatalog();
+    const tagged = products.map(product => ({ ...product, tags: catalog.products[product.productId] || [], tagColors: catalog.colors }));
+    if (version === refreshVersion) {
+        document.dispatchEvent(new CustomEvent("tags:loaded", { detail: catalog.labels }));
+        await displayProducts(tagged);
+    }
 }
 
 function clearDisplay()
@@ -265,4 +273,27 @@ function clearDisplay()
 
 export async function refreshProducts() {
     return refresh();
+}
+
+
+// Display two tags, with the remaining labels in Claire's overflow template.
+function renderTags(entry, labels, colors = {}) {
+    const list = entry.querySelector('.tags');
+    list.replaceChildren();
+    let overflow;
+    labels.forEach((label, index) => {
+        const chip = document.getElementById('template-tag').content.cloneNode(true);
+        chip.querySelector('.tag').textContent = label;
+        applyTagColor(chip.querySelector('.tag'), colors[label]);
+        if (index < 2) list.append(chip);
+        else {
+            if (!overflow) {
+                const more = document.getElementById('template-tag-more').content.cloneNode(true);
+                more.querySelector('.tag-more').textContent = "+" + (labels.length - 2);
+                overflow = more.querySelector('.tag-menu');
+                list.append(more);
+            }
+            overflow.append(chip);
+        }
+    });
 }

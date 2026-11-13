@@ -1,4 +1,5 @@
 "use strict";
+import { createTagEditor } from "./tag-form.js";
 
 import { makeRequest, readResponse, GetDefaultHeaderType, ERROR_MESSAGES } from './util/network-helper.js';
 
@@ -35,6 +36,9 @@ import { makeRequest, readResponse, GetDefaultHeaderType, ERROR_MESSAGES } from 
   const message = document.createElement("p");
   message.setAttribute("role", "status");
   form.querySelector(".form-footer").before(message);
+
+  const tagEditor = createTagEditor(form);
+  tagEditor.reset();
 
   let editingId = null;
   let busy = false;
@@ -80,6 +84,7 @@ import { makeRequest, readResponse, GetDefaultHeaderType, ERROR_MESSAGES } from 
     "two decimal places. Other product details are not connected yet.";
 
   function updateControls() {
+    tagEditor.setDisabled(busy || !ready);
     supportedInputs.forEach((input) => {
       input.disabled = busy || !ready;
     });
@@ -323,10 +328,12 @@ import { makeRequest, readResponse, GetDefaultHeaderType, ERROR_MESSAGES } from 
     panel.classList.remove("is-viewing");
     form.reset();
     resetComponentState();
+    tagEditor.reset();
     message.textContent = "Loading product form…";
     updateControls();
     showPanel();
     try {
+      await tagEditor.load();
       await refreshParentProducts();
       await setTargetParent(targetParentId);
       ready = true;
@@ -366,6 +373,7 @@ import { makeRequest, readResponse, GetDefaultHeaderType, ERROR_MESSAGES } from 
     panel.classList.add("is-viewing");
     form.reset();
     resetComponentState();
+    tagEditor.reset();
     message.textContent = "Loading product…";
     updateControls();
     showPanel(productId);
@@ -383,6 +391,7 @@ import { makeRequest, readResponse, GetDefaultHeaderType, ERROR_MESSAGES } from 
       quantityInput.value = product.inventory;
       priceInput.value = product.sellPrice;
 
+      await tagEditor.load(id);
       await refreshParentProducts(id);
       await setTargetParent(product.parentId);
 
@@ -498,6 +507,8 @@ import { makeRequest, readResponse, GetDefaultHeaderType, ERROR_MESSAGES } from 
       sellPrice: priceInput.value,
       inventory: Number(quantityInput.value),
       parentId: parentId,
+      tags: tagEditor.values(),
+      tagColors: tagEditor.colors(),
       materials: getComponentsData()
     };
 

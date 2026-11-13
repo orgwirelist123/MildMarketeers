@@ -42,7 +42,16 @@ public class ProductController {
   private final MaterialRepository materialRepository = new MaterialRepository();
 
   /** Input shared by the Add Product and Edit Product forms. */
-  public record ProductInput(String name, BigDecimal sellPrice, Integer inventory, Integer parentId, ArrayList<TrimmedMaterialDetails> materials) {}
+  public record ProductInput(String name, BigDecimal sellPrice, Integer inventory, Integer parentId, ArrayList<TrimmedMaterialDetails> materials, java.util.List<String> tags, java.util.Map<String, String> tagColors) {
+    public ProductInput(String name, BigDecimal sellPrice, Integer inventory,
+        Integer parentId, ArrayList<TrimmedMaterialDetails> materials) {
+      this(name, sellPrice, inventory, parentId, materials, null, null);
+    }
+    public ProductInput(String name, BigDecimal sellPrice, Integer inventory,
+        Integer parentId, ArrayList<TrimmedMaterialDetails> materials, java.util.List<String> tags) {
+      this(name, sellPrice, inventory, parentId, materials, tags, null);
+    }
+  }
   /** Selector shared by the Delete Product, Archive Product, and Duplicate Product forms. */
   public record ProductSelector(int productId) {}
 
@@ -81,7 +90,7 @@ public class ProductController {
     AddProductRequest request =
         new AddProductRequest(input.name(), input.sellPrice(), input.inventory(), input.parentId());
 
-    int productId = repository.add(request);
+    int productId = repository.add(request, input.tags(), input.tagColors());
 
     if (productId == 0) {
       throw new SQLException("The repository did not add the product.");
@@ -112,7 +121,7 @@ public class ProductController {
         new EditProductRequest(
             productId, input.name(), input.sellPrice(), input.inventory(), input.parentId());
 
-    if (!repository.update(request)) {
+    if (!repository.update(request, input.tags(), input.tagColors())) {
       return ResponseEntity.status(404)
           .body(Map.of("message", "This product no longer exists."));
     }

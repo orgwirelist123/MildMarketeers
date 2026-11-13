@@ -23,7 +23,9 @@ export function arrangeProducts(products, mode = "Alphabetically", query = "") {
         if (product.parentId) families.get(product.parentId)?.children.push(product);
     }
     const needle = query.trim().toLocaleLowerCase();
-    const matches = product => product.name.toLocaleLowerCase().includes(needle);
+    const tag = mode.startsWith("Tag: ") ? mode.slice(5).toLowerCase() : null;
+    const matches = product => product.name.toLocaleLowerCase().includes(needle)
+        && (tag === null || (product.tags || []).some(label => label.toLowerCase() === tag));
     return [...families.values()]
         .sort((a, b) => compare(a.parent, b.parent))
         .flatMap(({ parent, children }) => {

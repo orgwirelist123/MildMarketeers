@@ -35,6 +35,9 @@ CREATE TABLE "Material" (
 CREATE TABLE "Tag" (
     tag_id integer NOT NULL,
     label character varying NOT NULL,
+    color varchar(10) NOT NULL DEFAULT 'green'
+        CONSTRAINT tag_color_allowed CHECK (color IN
+            ('green', 'blue', 'purple', 'pink', 'red', 'orange', 'yellow', 'gray')),
     CONSTRAINT "Tag_pkey" PRIMARY KEY (tag_id)
 );
 

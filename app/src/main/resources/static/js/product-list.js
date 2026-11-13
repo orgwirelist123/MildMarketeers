@@ -39,3 +39,28 @@ document.querySelector('.header-actions [title="Refresh"]')
 document.addEventListener('products:changed', () => refreshProducts().catch(console.error));
 applyView().catch(console.error);
 refreshProducts().catch(console.error);
+
+
+const tagOptions = dropdown.querySelector('.tag-sort-list');
+const tagSearch = dropdown.querySelector('.tag-sort-menu input[type="search"]');
+let tagLabels = [];
+function drawTagOptions() {
+    tagOptions.replaceChildren();
+    for (const label of tagLabels.filter(label => label.toLowerCase().includes(tagSearch.value.toLowerCase()))) {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.textContent = label;
+        button.addEventListener('click', () => {
+            order = "Tag: " + label;
+            dropdown.open = false;
+            applyView().catch(console.error);
+        });
+        tagOptions.append(button);
+    }
+}
+tagOptions.replaceChildren();
+tagSearch.addEventListener('input', drawTagOptions);
+document.addEventListener('tags:loaded', event => {
+    tagLabels = [...new Set(event.detail)].sort((a, b) => a.localeCompare(b));
+    drawTagOptions();
+});
