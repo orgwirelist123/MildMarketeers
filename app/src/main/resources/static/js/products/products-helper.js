@@ -2,6 +2,19 @@
 
 import { readResponse, ERROR_MESSAGES } from '../util/network-helper.js';
 
+import { arrangeProducts } from './product-order.js';
+
+let savedProducts = [];
+let selectedOrder = "Alphabetically";
+let searchQuery = "";
+let refreshVersion = 0;
+
+export function setProductView(order, query) {
+    selectedOrder = order;
+    searchQuery = query;
+    return displayProducts(savedProducts);
+}
+
 const productList = document.querySelector('.product-list');
 
 const parentNoChildrenTemplate = document.getElementById('template-product');
@@ -14,10 +27,12 @@ const refreshButton = document.querySelector('.header-actions [title="Refresh"]'
 export async function displayProducts(products){
     try{
         // Clear the previously displayed products
+        savedProducts = products;
+        products = arrangeProducts(products, selectedOrder, searchQuery);
         clearDisplay();
         console.log(products);
 
-        let productFamilies = {}
+        let productFamilies = new Map()
         let productChildren = []
 
         /*
@@ -44,10 +59,10 @@ export async function displayProducts(products){
         products.forEach(product => {
             if (product.parentId == 0) // If the parent id == 0, we have a parent (or a possible parent)
             {
-                productFamilies[product.productId] = {
+                productFamilies.set(product.productId, {
                     Data: product,
                     Children: []
-                };
+                });
             }
             else // If the parent id != 0, we have a child
             {
@@ -74,7 +89,7 @@ export async function displayProducts(products){
 
         productChildren.forEach(product => {
             let parentId = product.parentId;
-            productFamilies[parentId].Children.push(product);
+            productFamilies.get(parentId)?.Children.push(product);
         });
 
         /*
@@ -83,8 +98,7 @@ export async function displayProducts(products){
             - For a parent with children, the entry uses template-product-group
             - For a child, the entry uses template-subproduct
         */
-        Object.keys(productFamilies).forEach(id => {
-            let productFamily = productFamilies[id];
+        productFamilies.forEach(productFamily => {
 
             // Make the parent
             // Create a new template instance for this product
@@ -231,15 +245,9 @@ export async function displayProducts(products){
 //     return result;
 // }
 
-    // Add an event listener to the refresh button.
-refreshButton.addEventListener("click", (event) => {
-    event.preventDefault();
-    refresh();
-    });
-
 async function refresh()
 {
-    // Get the products from the ProductController
+    const version = ++refreshVersion;
     const response = await fetch(`/api/products/list`);
     const products = await readResponse(
         response, 
@@ -247,7 +255,7 @@ async function refresh()
         ERROR_MESSAGES.PRODUCT.MISSING_PRODUCT, 
         ERROR_MESSAGES.GENERAL.REQUEST_FAILURE
     );
-    displayProducts(products);
+    if (version === refreshVersion) await displayProducts(products);
 }
 
 function clearDisplay()
@@ -256,5 +264,5 @@ function clearDisplay()
 }
 
 export async function refreshProducts() {
-    refresh();
+    return refresh();
 }
