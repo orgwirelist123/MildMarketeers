@@ -4,6 +4,7 @@ import { makeRequest, readResponse, GetDefaultHeaderType, ERROR_MESSAGES } from 
 
 (() => {
   const parentProductTemplate = document.getElementById('template-parent-option');
+  const componentTemplate = document.getElementById('template-component');
 
   const panel = document.querySelector("#panel-product");
   const form = panel.querySelector(".product-form");
@@ -18,6 +19,17 @@ import { makeRequest, readResponse, GetDefaultHeaderType, ERROR_MESSAGES } from 
   const priceInput = form.elements.namedItem("price");
   const subproductInput = form.elements.namedItem("is-subproduct");
 
+  const componentList = document.querySelector(".component-list");
+
+  const SUGGESTION_MULTIPLIER = 1.5;
+  const componentTotal = document.querySelector(".component-total");
+  // const componentNameInput = document.querySelector("[name=component-name]");
+  // const componentPriceInput = document.querySelector("[name=component-price-label]");
+  // const componentPriceActualInput = document.querySelector("[name=component-price]");
+  const addComponentButton = document.querySelector(".add-component");
+  const suggestionAmount = document.querySelector(".suggestion-amount");
+  const suggestionUseButton = document.querySelector(".suggestion-use");
+
   const submitButtons = form.querySelectorAll('button[type="submit"]');
 
   const message = document.createElement("p");
@@ -29,6 +41,8 @@ import { makeRequest, readResponse, GetDefaultHeaderType, ERROR_MESSAGES } from 
   let ready = true;
   let availableParents = {};
   let parentId = 0;
+  let components = [];
+  let suggestedAmount = 0;
   let setParentForDirectAddSubproduct = false;
 
   nameInput.maxLength = 50;
@@ -50,6 +64,8 @@ import { makeRequest, readResponse, GetDefaultHeaderType, ERROR_MESSAGES } from 
     button.disabled = true;
   });
 
+  suggestionUseButton.disabled = false;
+
   const note = document.createElement("p");
   note.textContent =
     "Currently saves name, quantity, and price. Prices can have up to " +
@@ -63,6 +79,7 @@ import { makeRequest, readResponse, GetDefaultHeaderType, ERROR_MESSAGES } from 
       button.disabled = busy || !ready;
     });
     addButton.disabled = busy;
+    addComponentButton.disabled = busy;
   }
 
   
@@ -158,6 +175,116 @@ import { makeRequest, readResponse, GetDefaultHeaderType, ERROR_MESSAGES } from 
     setTargetParent(0);
   }
 
+  function clearComponents() {
+    componentList.innerHTML = "";
+    components = [];
+  }
+
+  function calculateCostPerUnit() {
+    let sum = 0;
+    console.log(components);
+    components.forEach(componentEntry => {
+      let price = componentEntry.querySelector('[name="component-price"]');
+      sum += parseFloat(price.value);
+    });
+    console.log("Sum: " + sum);
+
+    sum = sum.toFixed(2);
+
+    componentTotal.firstElementChild.textContent =
+      new Intl.NumberFormat("en-US", {
+          style: "currency",
+          currency: "USD"
+      }).format(sum);
+
+    suggestedAmount = (sum * SUGGESTION_MULTIPLIER).toFixed(2);
+
+    suggestionAmount.textContent = 
+      new Intl.NumberFormat("en-US", {
+          style: "currency",
+          currency: "USD"
+      }).format(suggestedAmount);
+  }
+
+  function renderComponents(componentDatas) {
+    componentDatas.forEach(componentData => {
+      // Create an entry
+      let entry = addComponent();
+
+      // Fill in the data
+      let name = entry.querySelector('[name="component-name"]');
+      name.value = componentData.materialName;
+
+      let price = entry.querySelector('[name="component-price"]');
+      price.value = componentData.materialCost;
+      price.placeholder = componentData.materialCost;
+
+      console.log(componentDatas);
+    });
+
+    calculateCostPerUnit();
+  }
+
+  function refreshComponents(componentDatas) {
+    clearComponents();
+    renderComponents(componentDatas);
+  }
+
+  function getComponentsData() {
+    let datas = []
+
+    components.forEach(component => {
+      let name = component.querySelector('[name="component-name"]').value;
+      let price = component.querySelector('[name="component-price"]').value;
+
+      if (name.length != 0) {
+        let data = {
+          materialName: name,
+          materialCost: price
+        };
+
+        datas.push(data);
+      }
+    });
+
+    // console.log("Components Data:");
+    // console.log(datas);
+
+    return datas;
+  }
+
+  function addComponent() {
+    // Add a new component entry
+    const componentEntry = componentTemplate.content.cloneNode(true);
+    let child = componentEntry.firstElementChild
+    components.push(child);
+    componentList.appendChild(componentEntry);
+    return child;
+  }
+
+  function removeComponent(button) {
+    let parent = button.parentElement;
+    let index = components.indexOf(parent);
+    if (index == -1) {
+      console.log("Attempted to remove a component that doesn't exist.");
+      return false;
+    }
+    console.log(index);
+    components.splice(index, 1);
+    componentList.removeChild(parent);
+
+    calculateCostPerUnit();
+
+    // refreshComponents();
+  }
+
+  function setPriceToSuggestion() {
+    console.log("Setting price to suggestion");
+    console.log(suggestedAmount);
+    priceInput.value = suggestedAmount;
+    console.log(priceInput.value);
+  }
+
   function openAdd() {
     if (busy) return;
 
@@ -222,6 +349,16 @@ import { makeRequest, readResponse, GetDefaultHeaderType, ERROR_MESSAGES } from 
 
       setTargetParent(product.parentId);
 
+      const responseComponents = await fetch(`/api/materials/list/${id}`);
+      const productComponents = await readResponse(
+        responseComponents, 
+        ERROR_MESSAGES.GENERAL.INVALID_RESPONSE, 
+        ERROR_MESSAGES.PRODUCT.MISSING_PRODUCT, 
+        ERROR_MESSAGES.GENERAL.REQUEST_FAILURE
+      );
+      console.log(productComponents);
+      refreshComponents(productComponents);
+
       ready = true;
       message.textContent = "";
     } catch (error) {
@@ -258,6 +395,41 @@ import { makeRequest, readResponse, GetDefaultHeaderType, ERROR_MESSAGES } from 
   });
 
   document.addEventListener("click", (event) => {
+    const button = event.target.closest(".add-component");
+    if (!button) return;
+
+    event.preventDefault();
+
+    // Add a new component entry
+    addComponent();
+  });
+
+  document.addEventListener("click", (event) => {
+    const button = event.target.closest("[title='Remove component']");
+    if (!button) return;
+
+    console.log("Clicked remove component")
+    event.preventDefault();
+
+    // Add a new component entry
+    removeComponent(button);
+  });
+
+  document.addEventListener("input", (event) => {
+    const input = event.target.closest("[name='component-price']");
+    if (!input) return;
+
+    calculateCostPerUnit();
+  })
+
+  document.addEventListener("click", (event) => {
+    const button = event.target.closest(".suggestion-use");
+    if (!button) return;
+
+    setPriceToSuggestion();
+  })
+
+  document.addEventListener("click", (event) => {
     const button = event.target.closest(".add-subproduct");
     if (!button) return;
 
@@ -280,7 +452,8 @@ import { makeRequest, readResponse, GetDefaultHeaderType, ERROR_MESSAGES } from 
       name: nameInput.value.trim(),
       sellPrice: priceInput.value,
       inventory: Number(quantityInput.value),
-      parentId: parentId
+      parentId: parentId,
+      materials: getComponentsData()
     };
 
     busy = true;

@@ -12,6 +12,10 @@ import org.example.product.DuplicateProductRequest;
 import org.example.product.EditProductRequest;
 import org.example.product.ProductDetails;
 import org.example.product.ProductRepository;
+import org.example.materials.AddMaterialRequest;
+import org.example.materials.DeleteMaterialRequest;
+import org.example.materials.TrimmedMaterialDetails;
+import org.example.materials.MaterialRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
@@ -34,8 +38,11 @@ public class ProductController {
 
   private final ProductRepository repository = new ProductRepository();
 
+  // This will have to be refactored in the future, will need a bridge between these two repositories.
+  private final MaterialRepository materialRepository = new MaterialRepository();
+
   /** Input shared by the Add Product and Edit Product forms. */
-  public record ProductInput(String name, BigDecimal sellPrice, Integer inventory, Integer parentId) {}
+  public record ProductInput(String name, BigDecimal sellPrice, Integer inventory, Integer parentId, ArrayList<TrimmedMaterialDetails> materials) {}
   /** Selector shared by the Delete Product, Archive Product, and Duplicate Product forms. */
   public record ProductSelector(int productId) {}
 
@@ -74,12 +81,24 @@ public class ProductController {
     AddProductRequest request =
         new AddProductRequest(input.name(), input.sellPrice(), input.inventory(), input.parentId());
 
-    if (!repository.add(request)) {
+    int productId = repository.add(request);
+
+    if (productId == 0) {
       throw new SQLException("The repository did not add the product.");
     }
 
+    // Add the materials, if there are any
+    if (input.materials != null) {
+      System.out.println(input.materials.size());
+      for (TrimmedMaterialDetails md : input.materials) {
+        AddMaterialRequest mdRequest = 
+          new AddMaterialRequest(md.materialName(), productId, md.materialCost(), "unit", new BigDecimal(0), new BigDecimal(0));
+        materialRepository.addMaterial(mdRequest);
+      }
+    }
+
     return ResponseEntity.status(201)
-        .body(Map.of("message", "Product added successfully."));
+        .body(Map.of("message", "Product added successfully.", "productId", String.valueOf(productId)));
   }
 
   /** Saves edits and reports when the selected product no longer exists. */
@@ -96,6 +115,17 @@ public class ProductController {
     if (!repository.update(request)) {
       return ResponseEntity.status(404)
           .body(Map.of("message", "This product no longer exists."));
+    }
+
+    // Remove previous materials and add the new materials, if there are any
+    if (input.materials != null) {
+      System.out.println(input.materials.size());
+      materialRepository.deleteAllMaterials(productId);
+      for (TrimmedMaterialDetails md : input.materials) {
+        AddMaterialRequest mdRequest = 
+          new AddMaterialRequest(md.materialName(), productId, md.materialCost(), "unit", new BigDecimal(0), new BigDecimal(0));
+        materialRepository.addMaterial(mdRequest);
+      }
     }
 
     return ResponseEntity.ok(
