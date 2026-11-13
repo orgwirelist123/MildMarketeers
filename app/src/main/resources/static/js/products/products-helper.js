@@ -15,7 +15,7 @@ export async function displayProducts(products){
     try{
         // Clear the previously displayed products
         clearDisplay();
-        console.log(products);
+        //console.log(products);
 
         let productFamilies = {}
         let productChildren = []
@@ -236,7 +236,7 @@ async function displayTags(productId, productEntry) {
         const tagNum = moreTagTemplate.querySelector('.tag-more');
         //console.log({ moreTagTemplate, tagmenu: moreTagTemplate?.querySelector('.tag-menu') });
 
-        const response = await fetch(`/api/products/tags/${productId}`);
+        const response = await fetch(`/api/tags/${productId}`);
         const productTags = await readResponse(response);
 
         if(productTags.length == 0) return;
@@ -260,15 +260,15 @@ async function displayTags(productId, productEntry) {
                 }
                 else if(num == 2){
                     tagList.appendChild(moreTagTemplate);
-                    console.log("num("+num+"): moreTagList added");
+                    //console.log("num("+num+"): moreTagList added");
                     moreTagList.appendChild(tagEntry);
-                    console.log("num("+num+"): tagEntry added to moreTagList");
+                    //console.log("num("+num+"): tagEntry added to moreTagList");
                 }
                 else {
                     moreTagList.appendChild(tagEntry);
                 }
 
-                console.log("Finished adding tag: " + tag + ", num(" + num + ")");
+                //console.log("Finished adding tag: " + tag + ", num(" + num + ")");
                 
                 num = num + 1;
             });
