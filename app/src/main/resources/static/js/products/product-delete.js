@@ -58,7 +58,7 @@ import { refreshProducts } from './products-helper.js';
 
             refreshProducts();
         } catch (error) {
-            window.alert(error.message || "Could not reach the server.");
+            sendNotification(error.message || "Could not reach the server.");
         } finally {
 
         }
