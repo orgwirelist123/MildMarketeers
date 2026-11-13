@@ -21,7 +21,7 @@ import { makeRequest, readResponse, GetDefaultHeaderType, ERROR_MESSAGES } from 
 
   const componentList = document.querySelector(".component-list");
 
-  const SUGGESTION_MULTIPLIER = 1.5;
+  // Suggestions use a 50% markup, rounded to the nearest cent.
   const componentTotal = document.querySelector(".component-total");
   // const componentNameInput = document.querySelector("[name=component-name]");
   // const componentPriceInput = document.querySelector("[name=component-price-label]");
@@ -43,7 +43,15 @@ import { makeRequest, readResponse, GetDefaultHeaderType, ERROR_MESSAGES } from 
   let parentId = 0;
   let components = [];
   let suggestedAmount = 0;
-  let setParentForDirectAddSubproduct = false;
+  let inheritedCost = 0n;
+  let parentCostLoading = false;
+  let parentCostError = false;
+  let parentRequest = 0;
+
+  const inheritedNote = document.createElement("p");
+  inheritedNote.setAttribute("role", "status");
+  inheritedNote.hidden = true;
+  componentList.before(inheritedNote);
 
   nameInput.maxLength = 50;
   quantityInput.max = "2147483647";
@@ -76,72 +84,40 @@ import { makeRequest, readResponse, GetDefaultHeaderType, ERROR_MESSAGES } from 
       input.disabled = busy || !ready;
     });
     submitButtons.forEach((button) => {
-      button.disabled = busy || !ready;
+      button.disabled = busy || !ready || parentCostLoading || parentCostError;
     });
     addButton.disabled = busy;
-    addComponentButton.disabled = busy;
+    addComponentButton.disabled = busy || !ready;
+    suggestionUseButton.disabled = busy || !ready || parentCostLoading || parentCostError || suggestedAmount === null;
+    componentList.querySelectorAll("input, button").forEach((control) => {
+      control.disabled = busy || !ready;
+    });
+    parentList.querySelectorAll("button").forEach((button) => {
+      button.disabled = busy || !ready;
+    });
   }
 
   
-  function refreshParentProducts(productId = 0, targetParentId = 0) {
-    // When displaying the panel, also refresh the subproduct dropdown in the product panel
-    // Get the valid parent products
-    try {
-      const url = '/api/products/listAvailableParents/' + productId;
-      fetch(url).then((response) => {
-        readResponse(
-          response,
-          ERROR_MESSAGES.GENERAL.INVALID_RESPONSE, 
-          ERROR_MESSAGES.PRODUCT.MISSING_PRODUCT, 
-          ERROR_MESSAGES.GENERAL.REQUEST_FAILURE
-        ).then((products) => {
-          // Clear the previous .parent-list
-          parentList.innerHTML = "";
-          availableParents = {};
-
-          // Include a 'none' option for products without parents
-          products.unshift({
-            productId: 0,
-            name: "None"
-          });
-
-          // Generate the new button entries
-          products.forEach(product => {
-            availableParents[product.productId] = product.name;
-
-            // Create a new template instance for this product
-            const parentEntry = parentProductTemplate.content.cloneNode(true);
-            const parentOption = parentEntry.querySelector(".parent-option");
-            
-            // Attach the parent's product id
-            parentOption.dataset.productId = product.productId;
-
-            // Fill in the name
-            parentOption.textContent = product.name;
-
-            // Append the new template instance to the product-list
-            parentList.appendChild(parentEntry);
-          });
-
-          if (targetParentId != 0) {
-            setTargetParent(targetParentId);
-          }
-        })
-      })
-    } catch (error) {
-      message.textContent = error.message || "Could not load the product.";
-    } finally {
-      busy = false;
-      updateControls();
+  async function refreshParentProducts(productId = 0) {
+    const response = await fetch(`/api/products/listAvailableParents/${productId}`);
+    const products = await readResponse(response);
+    if (!Array.isArray(products)) {
+      throw new Error("Could not load available parent products.");
     }
+    parentList.innerHTML = "";
+    availableParents = {0: "None"};
+    [{productId: 0, name: "None"}, ...products].forEach((product) => {
+      availableParents[product.productId] = product.name;
+      const entry = parentProductTemplate.content.cloneNode(true);
+      const option = entry.querySelector(".parent-option");
+      option.dataset.productId = product.productId;
+      option.textContent = product.name;
+      parentList.appendChild(entry);
+    });
   }
 
-  function showPanel(productId) {
-    if (!panel.matches(":popover-open")) {
-      panel.showPopover();
-
-      refreshParentProducts(productId);
-    }
+  function showPanel() {
+    if (!panel.matches(":popover-open")) panel.showPopover();
   }
 
   // async function readResponse(response) {
@@ -166,13 +142,56 @@ import { makeRequest, readResponse, GetDefaultHeaderType, ERROR_MESSAGES } from 
   //   return result;
   // }
 
-  function setTargetParent(productId) {
-    parentSelected.textContent = availableParents[productId];
-    parentId = productId;
+  // Keep inherited costs separate: only editable, local components are saved.
+  async function setTargetParent(productId) {
+    const request = ++parentRequest;
+    parentId = Number(productId ?? 0);
+    subproductInput.checked = parentId !== 0;
+    subproductInput.setCustomValidity("");
+    parentSelected.textContent = availableParents[parentId] ?? `Product #${parentId}`;
+    inheritedCost = 0n;
+    parentCostError = false;
+    parentCostLoading = parentId !== 0;
+    inheritedNote.hidden = parentId === 0;
+    inheritedNote.textContent = parentCostLoading ? "Loading inherited component costs…" : "";
+    calculateCostPerUnit();
+    updateControls();
+    if (!parentCostLoading) return;
+
+    try {
+      const response = await fetch(`/api/materials/list/${parentId}`);
+      const materials = await readResponse(response);
+      if (!Array.isArray(materials)) throw new Error("Invalid parent materials response.");
+      const total = materials.reduce((sum, material) => sum + moneyToCents(material.materialCost), 0n);
+      if (request !== parentRequest) return;
+      inheritedCost = total;
+      inheritedNote.textContent = `Inherited from ${parentSelected.textContent}: ${formatMoney(total)} per unit. Edit these components on the parent product.`;
+    } catch (error) {
+      if (request !== parentRequest) return;
+      parentCostError = true;
+      inheritedNote.textContent = "Could not load the parent's component costs. Select the parent again to retry.";
+    } finally {
+      if (request === parentRequest) {
+        parentCostLoading = false;
+        calculateCostPerUnit();
+        updateControls();
+      }
+    }
   }
 
-  function clearTargetParent() {
-    setTargetParent(0);
+  function resetComponentState() {
+    ++parentRequest; // Ignore responses belonging to a previous form session.
+    parentId = 0;
+    subproductInput.checked = false;
+    subproductInput.setCustomValidity("");
+    parentSelected.textContent = "None";
+    inheritedCost = 0n;
+    parentCostLoading = false;
+    parentCostError = false;
+    inheritedNote.hidden = true;
+    inheritedNote.textContent = "";
+    clearComponents();
+    calculateCostPerUnit();
   }
 
   function clearComponents() {
@@ -180,30 +199,43 @@ import { makeRequest, readResponse, GetDefaultHeaderType, ERROR_MESSAGES } from 
     components = [];
   }
 
+  function moneyToCents(value) {
+    const text = String(value ?? "").trim();
+    if (text === "") return 0n;
+    if (!/^\d+(?:\.\d{0,2})?$/.test(text)) {
+      throw new Error("Component costs must be nonnegative amounts with up to two decimal places.");
+    }
+    const [whole, fraction = ""] = text.split(".");
+    return BigInt(whole) * 100n + BigInt(fraction.padEnd(2, "0"));
+  }
+
+  function decimalMoney(cents) {
+    return `${cents / 100n}.${String(cents % 100n).padStart(2, "0")}`;
+  }
+
+  function formatMoney(cents) {
+    const [whole, fraction] = decimalMoney(cents).split(".");
+    return `$${BigInt(whole).toLocaleString("en-US")}.${fraction}`;
+  }
+
   function calculateCostPerUnit() {
-    let sum = 0;
-    console.log(components);
-    components.forEach(componentEntry => {
-      let price = componentEntry.querySelector('[name="component-price"]');
-      sum += parseFloat(price.value);
+    let sum = inheritedCost;
+    let valid = !parentCostLoading && !parentCostError;
+    components.forEach((entry) => {
+      const input = entry.querySelector('[name="component-price"]');
+      input.setCustomValidity("");
+      try {
+        if (input.validity.badInput) throw new Error("Enter a valid component cost.");
+        sum += moneyToCents(input.value);
+      } catch (error) {
+        input.setCustomValidity(error.message);
+        valid = false;
+      }
     });
-    console.log("Sum: " + sum);
-
-    sum = sum.toFixed(2);
-
-    componentTotal.firstElementChild.textContent =
-      new Intl.NumberFormat("en-US", {
-          style: "currency",
-          currency: "USD"
-      }).format(sum);
-
-    suggestedAmount = (sum * SUGGESTION_MULTIPLIER).toFixed(2);
-
-    suggestionAmount.textContent = 
-      new Intl.NumberFormat("en-US", {
-          style: "currency",
-          currency: "USD"
-      }).format(suggestedAmount);
+    suggestedAmount = valid ? decimalMoney((sum * 3n + 1n) / 2n) : null;
+    componentTotal.firstElementChild.textContent = valid ? formatMoney(sum) : "—";
+    suggestionAmount.textContent = valid ? formatMoney((sum * 3n + 1n) / 2n) : "—";
+    suggestionUseButton.disabled = busy || !ready || !valid;
   }
 
   function renderComponents(componentDatas) {
@@ -279,29 +311,32 @@ import { makeRequest, readResponse, GetDefaultHeaderType, ERROR_MESSAGES } from 
   }
 
   function setPriceToSuggestion() {
-    console.log("Setting price to suggestion");
-    console.log(suggestedAmount);
+    if (busy || !ready || parentCostLoading || parentCostError || suggestedAmount === null) return;
     priceInput.value = suggestedAmount;
-    console.log(priceInput.value);
   }
 
-  function openAdd() {
+  async function openAdd(targetParentId = 0) {
     if (busy) return;
-
     editingId = null;
-    ready = true;
+    ready = false;
+    busy = true;
     panel.classList.remove("is-viewing");
     form.reset();
-    message.textContent = "";
-
-    if (!setParentForDirectAddSubproduct) {
-      console.log("cleared target parent");
-      clearTargetParent();
-    }
-    setParentForDirectAddSubproduct = false;
-
+    resetComponentState();
+    message.textContent = "Loading product form…";
     updateControls();
     showPanel();
+    try {
+      await refreshParentProducts();
+      await setTargetParent(targetParentId);
+      ready = true;
+      message.textContent = "";
+    } catch (error) {
+      message.textContent = error.message || "Could not load the product form.";
+    } finally {
+      busy = false;
+      updateControls();
+    }
   }
 
   async function openEdit(productId) {
@@ -330,6 +365,7 @@ import { makeRequest, readResponse, GetDefaultHeaderType, ERROR_MESSAGES } from 
     busy = true;
     panel.classList.add("is-viewing");
     form.reset();
+    resetComponentState();
     message.textContent = "Loading product…";
     updateControls();
     showPanel(productId);
@@ -347,7 +383,8 @@ import { makeRequest, readResponse, GetDefaultHeaderType, ERROR_MESSAGES } from 
       quantityInput.value = product.inventory;
       priceInput.value = product.sellPrice;
 
-      setTargetParent(product.parentId);
+      await refreshParentProducts(id);
+      await setTargetParent(product.parentId);
 
       const responseComponents = await fetch(`/api/materials/list/${id}`);
       const productComponents = await readResponse(
@@ -357,6 +394,7 @@ import { makeRequest, readResponse, GetDefaultHeaderType, ERROR_MESSAGES } from 
         ERROR_MESSAGES.GENERAL.REQUEST_FAILURE
       );
       console.log(productComponents);
+      if (!Array.isArray(productComponents)) throw new Error("Could not load product components.");
       refreshComponents(productComponents);
 
       ready = true;
@@ -391,7 +429,9 @@ import { makeRequest, readResponse, GetDefaultHeaderType, ERROR_MESSAGES } from 
 
     event.preventDefault();
 
-    setTargetParent(button.dataset.productId);
+    if (busy || !ready) return;
+    void setTargetParent(button.dataset.productId);
+    parentSelected.closest("details").open = false;
   });
 
   document.addEventListener("click", (event) => {
@@ -400,8 +440,9 @@ import { makeRequest, readResponse, GetDefaultHeaderType, ERROR_MESSAGES } from 
 
     event.preventDefault();
 
-    // Add a new component entry
+    if (busy || !ready) return;
     addComponent();
+    calculateCostPerUnit();
   });
 
   document.addEventListener("click", (event) => {
@@ -411,7 +452,7 @@ import { makeRequest, readResponse, GetDefaultHeaderType, ERROR_MESSAGES } from 
     console.log("Clicked remove component")
     event.preventDefault();
 
-    // Add a new component entry
+    if (busy || !ready) return;
     removeComponent(button);
   });
 
@@ -432,19 +473,23 @@ import { makeRequest, readResponse, GetDefaultHeaderType, ERROR_MESSAGES } from 
   document.addEventListener("click", (event) => {
     const button = event.target.closest(".add-subproduct");
     if (!button) return;
+    event.preventDefault();
+    void openAdd(button.dataset.productId);
+  });
 
-    // event.preventDefault();
-    refreshParentProducts(0, button.dataset.productId);
-    setParentForDirectAddSubproduct = true;
-    // console.log("adding a subproduct for parent: " + button.dataset.productId);
-    // setTargetParent(button.dataset.productId);
-    // console.log(parentId);
+  subproductInput.addEventListener("change", () => {
+    if (!subproductInput.checked) {
+      void setTargetParent(0);
+    } else if (parentId === 0) {
+      subproductInput.setCustomValidity("Choose a parent product or uncheck this box.");
+      parentSelected.closest("details").open = true;
+    }
   });
 
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
 
-    if (busy || !ready || !form.reportValidity()) return;
+    if (busy || !ready || parentCostLoading || parentCostError || !form.reportValidity()) return;
 
     const id = editingId;
     const isEditing = id !== null;
