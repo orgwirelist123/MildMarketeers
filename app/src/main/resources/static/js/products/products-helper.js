@@ -104,6 +104,11 @@ export async function displayProducts(products){
                 saleButton.dataset.productId = productFamily.Data.productId;
             }
 
+            const addSubproductButton = productEntry.querySelector(".add-subproduct");
+            if (addSubproductButton) {
+                addSubproductButton.dataset.productId = productFamily.Data.productId;
+            }
+
             // Fill in data to their appropriate positions
             productEntry.querySelector('.name').textContent = productFamily.Data.name;
             productEntry.querySelector('.stock').textContent = productFamily.Data.inventory;
