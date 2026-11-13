@@ -194,7 +194,6 @@
     } catch (error) {
       loadError = "Could not load sales. Please try Refresh.";
       console.error("Sales loading failed:", error);
-      sendNotification(error.message || "Could not load sales. Please try Refresh.");
     } finally {
       loading = false;
       refreshButton.disabled = false;
@@ -204,7 +203,10 @@
   }
 
   searchInput.addEventListener("input", render);
-  refreshButton.addEventListener("click", refresh);
+  refreshButton.addEventListener("click", () => {
+    sendNotification("Refreshing sales!");
+    refresh();
+  });
 
   updateSortControls();
   refresh();

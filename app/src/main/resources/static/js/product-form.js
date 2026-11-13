@@ -16,6 +16,7 @@ import { makeRequest, readResponse, GetDefaultHeaderType, ERROR_MESSAGES } from 
   const parentSelected = document.querySelector(".parent-selected");
   const parentSearch = form.querySelector('.parent-picker input[type="search"]');
   const parentSearchStatus = document.createElement("p");
+  parentSearchStatus.className = 'menu-message';
   parentSearchStatus.setAttribute("role", "status");
   parentSearchStatus.hidden = true;
   parentList.after(parentSearchStatus);
@@ -438,8 +439,7 @@ import { makeRequest, readResponse, GetDefaultHeaderType, ERROR_MESSAGES } from 
       ready = true;
       message.textContent = "";
     } catch (error) {
-      sendNotification(error.message || "Could not load the product.");
-      // message.textContent = error.message || "Could not load the product.";
+      message.textContent = error.message || "Could not load the product.";
     } finally {
       busy = false;
       updateControls();
@@ -588,8 +588,7 @@ import { makeRequest, readResponse, GetDefaultHeaderType, ERROR_MESSAGES } from 
       );
     } catch (error) {
       // Preserve entries after an unsuccessful save.
-      sendNotification(error.message || "Could not reach the server.");
-      // message.textContent = error.message || "Could not reach the server.";
+      message.textContent = error.message || "Could not reach the server.";
     } finally {
       busy = false;
       updateControls();

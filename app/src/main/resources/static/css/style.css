@@ -328,6 +328,17 @@ svg {
     color: var(--red);
 }
 
+.menu-message {
+    margin: 0;
+    padding: 6px 12px;
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+}
+
+.menu-message:empty {
+    display: none;
+}
+
 .dots {
     width: 34px;
     height: 34px;

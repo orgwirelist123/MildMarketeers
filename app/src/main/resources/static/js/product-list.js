@@ -15,7 +15,7 @@ summary.prepend(label);
 let order = "Alphabetically";
 
 function applyView() {
-    label.textContent = `Sort: ${order} `;
+    label.textContent = order.startsWith("Tag: ") ? `${order} ` : `Sort: ${order}`;
     for (const button of buttons) {
         const selected = button.textContent.trim() === order;
         button.classList.toggle('selected', selected);
