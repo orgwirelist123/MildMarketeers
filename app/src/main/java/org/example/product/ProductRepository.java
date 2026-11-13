@@ -635,90 +635,88 @@ public final class ProductRepository {
       connection.setAutoCommit(false);
 
       try {
-        // The current schema has no automatic history ID generator.
-        // Hold this lock until commit so concurrent history writes cannot
-        // allocate the same next ID.
-        try (PreparedStatement statement =
-            connection.prepareStatement(
-                "LOCK TABLE public.\"ProductHistory\" IN EXCLUSIVE MODE")) {
+        // Match the lock order used by product edits and sales.
+        try (PreparedStatement statement = connection.prepareStatement(
+            "LOCK TABLE public.\"ProductHistory\" IN EXCLUSIVE MODE")) {
           statement.setQueryTimeout(5);
           statement.execute();
         }
 
-        // // Lock the current product so its saved history matches the state
-        // // immediately before this update.
-        // try (PreparedStatement statement =
-        //     connection.prepareStatement(
-        //         """
-        //         SELECT product_id
-        //         FROM ONLY public."Product"
-        //         WHERE product_id = ?
-        //         FOR UPDATE
-        //         """)) {
-        //   statement.setInt(1, request.productId());
-        //   statement.setQueryTimeout(5);
-
-        //   try (ResultSet result = statement.executeQuery()) {
-        //     if (!result.next()) {
-        //       connection.rollback();
-        //       return false;
-        //     }
-        //   }
-        // }
-
-        try (PreparedStatement statement =
-            connection.prepareStatement(
-                """
-                SELECT product_id
-                FROM ONLY public."Product"
-                WHERE product_id = ?
-                FOR UPDATE
-                """)) {
+        try (PreparedStatement statement = connection.prepareStatement(
+            """
+            SELECT product_id
+            FROM ONLY public."Product"
+            WHERE product_id = ?
+            FOR UPDATE
+            """)) {
           statement.setInt(1, request.productId());
           statement.setQueryTimeout(5);
-
           try (ResultSet result = statement.executeQuery()) {
-            if (result.next()) {
-              String deleteSqlProduct =
-                  """
-                  DELETE FROM ONLY public."Product"
-                  WHERE product_id = ?
-                  """;
-
-              try (PreparedStatement deleteStatement =
-                  connection.prepareStatement(deleteSqlProduct)) {
-                deleteStatement.setInt(1, request.productId());
-
-                deleteStatement.setQueryTimeout(5);
-
-                if (deleteStatement.executeUpdate() != 1) {
-                  throw new SQLException("Could not delete the product.");
-                }
-              }
+            if (!result.next()) {
+              connection.rollback();
+              return false;
             }
           }
         }
 
-        String deleteSqlProductHistory =
+        // Include inherited SaleHistory rows to protect historical sales too.
+        try (PreparedStatement statement = connection.prepareStatement(
             """
-            DELETE FROM ONLY public."ProductHistory"
-            WHERE product_id = ?
-            """;
-
-        try (PreparedStatement statement =
-            connection.prepareStatement(deleteSqlProductHistory)) {
+            SELECT EXISTS (
+              SELECT 1 FROM public."Sale" WHERE product_id = ?
+            )
+            """)) {
           statement.setInt(1, request.productId());
-
           statement.setQueryTimeout(5);
-
-          statement.executeUpdate();
-
-          // if (result != 1 && result != 0) {
-          //   throw new SQLException("Could not delete the product history.");
-          // }
+          try (ResultSet result = statement.executeQuery()) {
+            result.next();
+            if (result.getBoolean(1)) {
+              throw new IllegalArgumentException(
+                  "This product has recorded sales. Archive it instead.");
+            }
+          }
         }
 
+        try (PreparedStatement statement = connection.prepareStatement(
+            """
+            SELECT EXISTS (
+              SELECT 1 FROM ONLY public."Product" WHERE parent_id = ?
+            )
+            """)) {
+          statement.setInt(1, request.productId());
+          statement.setQueryTimeout(5);
+          try (ResultSet result = statement.executeQuery()) {
+            result.next();
+            if (result.getBoolean(1)) {
+              throw new IllegalArgumentException(
+                  "This product has subproducts. Archive it instead.");
+            }
+          }
+        }
 
+        // Remove current dependencies, preserving shared tags and history.
+        for (String sql : new String[] {
+            "DELETE FROM ONLY public.\"Material\" WHERE product_id = ?",
+            "DELETE FROM ONLY public.\"TagFor\" WHERE product_id = ?"
+        }) {
+          try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, request.productId());
+            statement.setQueryTimeout(5);
+            statement.executeUpdate();
+          }
+        }
+
+        try (PreparedStatement statement = connection.prepareStatement(
+            """
+            DELETE FROM ONLY public."Product"
+            WHERE product_id = ?
+            """)) {
+          statement.setInt(1, request.productId());
+          statement.setQueryTimeout(5);
+          if (statement.executeUpdate() != 1) {
+            throw new SQLException("Could not delete the product.");
+          }
+        }
 
         connection.commit();
         return true;
