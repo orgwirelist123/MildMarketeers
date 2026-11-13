@@ -230,7 +230,8 @@
         sendNotification("Sale registered successfully!");
       }
     } catch (error) {
-      console.error("Could not display sale notification:", error);
+      sendNotification(error.message || "Could not reach the server.");
+      // console.error("Could not display sale notification:", error);
     }
   });
 

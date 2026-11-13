@@ -57,9 +57,11 @@ import { refreshProducts } from './products-helper.js';
             await readResponse(response);
 
             refreshProducts();
+            sendNotification("Product duplicated successfully!");
         } catch (error) {
             // Preserve entries after an unsuccessful save.
             // message.textContent = error.message || "Could not reach the server.";
+            sendNotification(error.message || "Could not reach the server.");
         } finally {
 
         }

@@ -35,7 +35,10 @@ for (const button of buttons) {
 }
 search.addEventListener('input', () => applyView().catch(console.error));
 document.querySelector('.header-actions [title="Refresh"]')
-    .addEventListener('click', () => refreshProducts().catch(console.error));
+    .addEventListener('click', () => {
+        sendNotification("Refreshing products!");
+        refreshProducts().catch(console.error);
+    });
 document.addEventListener('products:changed', () => refreshProducts().catch(console.error));
 applyView().catch(console.error);
 refreshProducts().catch(console.error);
