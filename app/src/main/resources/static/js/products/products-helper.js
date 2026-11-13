@@ -118,6 +118,9 @@ export async function displayProducts(products){
                     currency: "USD"
                 }).format(productFamily.Data.sellPrice);
 
+            // Display tags for parent product
+            displayTags(productFamily.Data.productId, productEntry);
+
             if (productFamily.Data.archived) {
                 productEntry.querySelector('.product').classList.add("archived")
             }
@@ -146,6 +149,9 @@ export async function displayProducts(products){
                         style: "currency",
                         currency: "USD"
                     }).format(child.sellPrice);
+                
+                // Display tags for child products
+                displayTags(child.productId, productEntry);
 
                 if (child.archived) {
                     productEntry.querySelector('.product').classList.add("archived")
@@ -216,6 +222,64 @@ export async function displayProducts(products){
 //     }
 //     return result;
 // }
+
+async function displayTags(productId, productEntry) {
+        // if(!productEntry) {
+        //     console.log("productEntry is null");
+        //     return;
+        // }
+
+        const tagTemplate = document.getElementById("template-tag");
+        const moreTagTemplate = document.getElementById("template-tag-more").content.cloneNode(true);
+        const tagList = productEntry.querySelector('.tags');
+        const moreTagList = moreTagTemplate.querySelector('.tag-menu');
+        const tagNum = moreTagTemplate.querySelector('.tag-more');
+        //console.log({ moreTagTemplate, tagmenu: moreTagTemplate?.querySelector('.tag-menu') });
+
+        const response = await fetch(`/api/products/tags/${productId}`);
+        const productTags = await readResponse(response);
+
+        if(productTags.length == 0) return;
+
+        // console.log(productTags);
+
+        //console.log({ productEntry, tags: productEntry?.querySelector('.tags') });
+
+        try {
+            var num = 0;
+
+            productTags.forEach(tag => {
+                const tagEntry = tagTemplate.content.cloneNode(true);
+                tagEntry.querySelector('.tag').textContent = tag;
+
+                if(num == 0) {
+                    tagList.insertBefore(tagEntry, tagList.firstChild);
+                }
+                else if(num < 2) {
+                    tagList.append(tagEntry);
+                }
+                else if(num == 2){
+                    tagList.appendChild(moreTagTemplate);
+                    console.log("num("+num+"): moreTagList added");
+                    moreTagList.appendChild(tagEntry);
+                    console.log("num("+num+"): tagEntry added to moreTagList");
+                }
+                else {
+                    moreTagList.appendChild(tagEntry);
+                }
+
+                console.log("Finished adding tag: " + tag + ", num(" + num + ")");
+                
+                num = num + 1;
+            });
+
+            if(num > 2) {                
+                tagNum.textContent = "+" + (num-2);
+            }
+        } catch (error) {
+            console.log(error.message);
+        }        
+    }
 
     // Add an event listener to the refresh button.
 refreshButton.addEventListener("click", (event) => {

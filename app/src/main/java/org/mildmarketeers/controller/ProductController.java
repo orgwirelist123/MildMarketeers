@@ -187,6 +187,13 @@ public class ProductController {
       Map.of("message", "Product duplicated successfully."));
   }
 
+  @GetMapping("/tags/{productId}")
+  public ResponseEntity<ArrayList<String>> displayTags(
+    @PathVariable("productId") int productId) throws SQLException{
+          ArrayList<String> productTags = repository.findTagsByProductId(productId);
+          return ResponseEntity.ok(productTags);
+  }
+
   /** Returns validation errors so the form can explain what needs correcting. */
   @ExceptionHandler(IllegalArgumentException.class)
   public ResponseEntity<Map<String, String>> handleInvalidInput(
