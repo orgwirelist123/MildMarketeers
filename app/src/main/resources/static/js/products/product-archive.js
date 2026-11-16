@@ -29,7 +29,7 @@ import { confirmAction } from '../util/confirm.js';
             const confirmed = await confirmAction({
                 title: "Archive Product",
                 message:
-                    `Archive "${name}"? It will be grayed out and cannot be sold until you restore it.`
+                    `Archive "${name}"? It cannot be sold until you restore it.`
                     + (hasSubproducts ? " Its subproducts will be archived too." : ""),
                 confirmLabel: "Archive product",
             });
