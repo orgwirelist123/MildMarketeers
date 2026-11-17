@@ -610,6 +610,32 @@ html:has(.panel:popover-open) {
     color: var(--text);
 }
 
+.confirm-message {
+    margin: 0 0 20px;
+    line-height: 1.5;
+}
+
+.popup:has(.confirm-message) .panel-header {
+    margin-bottom: 12px;
+}
+
+.confirm-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
+.btn-danger {
+    background: var(--red);
+    border-color: var(--red);
+    color: white;
+}
+
+.btn-danger:hover {
+    background: #C2453D;
+    border-color: #C2453D;
+}
+
 /* ===== Notifications ===== */
 .notifications {
     position: fixed;

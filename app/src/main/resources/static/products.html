@@ -383,6 +383,21 @@
             </form>
         </div>
     </div>
+
+    <!-- Confirmation popup for deleting and archiving -->
+    <div id="popup-confirm" class="panel popup" popover>
+        <header class="panel-header">
+            <h2 class="confirm-title">Delete Product</h2>
+            <button type="button" class="close-btn" popovertarget="popup-confirm" popovertargetaction="hide" title="Close"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+        </header>
+        <div class="panel-body">
+            <p class="confirm-message">Delete this product? This can't be undone.</p>
+            <div class="confirm-actions">
+                <button type="button" class="btn" popovertarget="popup-confirm" popovertargetaction="hide">Cancel</button>
+                <button type="button" class="btn btn-dark confirm-yes">Delete product</button>
+            </div>
+        </div>
+    </div>
 </div>
 
 <!-- Notifications -->
