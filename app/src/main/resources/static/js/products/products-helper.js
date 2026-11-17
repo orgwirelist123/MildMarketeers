@@ -146,6 +146,11 @@ export async function displayProducts(products){
                 archiveButton.dataset.action = productFamily.Data.archived ? "restore" : "archive";
             }
 
+            const deleteButton = productEntry.querySelector(".delete");
+            if (deleteButton) {
+                deleteButton.dataset.unitsSold = productFamily.Data.unitsSold;
+            }
+
             if (productFamily.Data.archived) {
                 productEntry.querySelector('.product').classList.add("archived")
             }
@@ -182,6 +187,11 @@ export async function displayProducts(products){
                     archiveButton.textContent = child.archived ? "Restore" : "Archive";
                     archiveButton.dataset.productId = child.productId;
                     archiveButton.dataset.action = child.archived ? "restore" : "archive";
+                }
+
+                const deleteButton = productEntry.querySelector(".delete");
+                if (deleteButton) {
+                    deleteButton.dataset.unitsSold = child.unitsSold;
                 }
 
                 if (child.archived) {

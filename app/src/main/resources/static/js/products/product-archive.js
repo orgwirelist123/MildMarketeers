@@ -1,6 +1,7 @@
 "use strict";
 
 import { refreshProducts } from './products-helper.js';
+import { confirmAction } from '../util/confirm.js';
 
 (() => {
     const pending = new Set();
@@ -18,6 +19,22 @@ import { refreshProducts } from './products-helper.js';
             !["archive", "restore"].includes(action)) {
             sendNotification("Refresh Products before trying again.");
             return;
+        }
+
+        if (action === "archive") {
+            const product = button.closest(".product");
+            const name = button.closest(".row").querySelector(".name").textContent;
+            const hasSubproducts = product.classList.contains("product-group");
+            button.closest("details").open = false;
+            const confirmed = await confirmAction({
+                title: "Archive Product",
+                message:
+                    `Archive "${name}"? It cannot be sold until you restore it.`
+                    + (hasSubproducts ? " Its subproducts will be archived too." : ""),
+                confirmLabel: "Archive product",
+            });
+
+            if (!confirmed) return;
         }
 
         if (pending.has(productId)) return;

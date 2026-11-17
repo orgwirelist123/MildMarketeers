@@ -1,10 +1,11 @@
 "use strict";
 
 import { refreshProducts } from './products-helper.js';
+import { confirmAction } from '../util/confirm.js';
 
 (() => {
     // For delete buttons that are clicked, send a delete request
-    document.addEventListener("click", (event) => {
+    document.addEventListener("click", async (event) => {
         const button = event.target.closest(".delete");
         if (!button) return;
 
@@ -12,8 +13,33 @@ import { refreshProducts } from './products-helper.js';
 
         const targetRow = button.parentElement.parentElement.parentElement.querySelector(".btn-view").closest("[data-product-id]");
         const productId = targetRow?.dataset.productId;
+        const name = button.closest(".row").querySelector(".name").textContent;
 
-        deleteProduct(productId);
+        const hasSales = Number(button.dataset.unitsSold) > 0;
+        const hasSubproducts = button.closest(".product").classList.contains("product-group");
+
+        button.closest("details").open = false;
+
+        if (hasSales) {
+            sendNotification(`"${name}" has recorded sales, so it cannot be deleted. Archive it instead.`);
+            return;
+        }
+
+        if (hasSubproducts) {
+            sendNotification(`"${name}" has subproducts, so it cannot be deleted. Archive it instead.`);
+            return;
+        }
+
+        const confirmed = await confirmAction({
+            title: "Delete Product",
+            message: `Delete "${name}"? This cannot be undone.`,
+            confirmLabel: "Delete product",
+            danger: true
+        });
+
+        if (confirmed) {
+            deleteProduct(productId);
+        }
     });
 
     async function readResponse(response) {
