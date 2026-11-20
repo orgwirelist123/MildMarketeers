@@ -6,12 +6,12 @@ package org.example.product;
  * @param productId identifier of the existing product
  */
 public record ArchiveProductRequest(
-    int productId) {
+		int productId) {
 
-  /**
-   * Validates and normalizes the supplied product details.
-   *
-   * @throws IllegalArgumentException if any editable value is invalid
-   */
-  public ArchiveProductRequest {}
+	/**
+	 * Validates and normalizes the supplied product details.
+	 *
+	 * @throws IllegalArgumentException if any editable value is invalid
+	 */
+	public ArchiveProductRequest {}
 }

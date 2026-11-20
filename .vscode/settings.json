@@ -4,5 +4,11 @@
         "app"
     ],
     "java.configuration.updateBuildConfiguration": "automatic",
-    "java.compile.nullAnalysis.mode": "disabled"
+    "java.compile.nullAnalysis.mode": "disabled",
+    "commandOnAllFiles.commands": {
+        "Convert All to Tabs": {
+            "command": "editor.action.indentationToTabs",
+            "includeFileExtensions": [".java", ".js", ".html", ".css"]
+        }
+    }
 }

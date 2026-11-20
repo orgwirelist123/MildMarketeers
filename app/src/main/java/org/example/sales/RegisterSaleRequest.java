@@ -15,29 +15,29 @@ import java.math.BigDecimal;
  * @param email email of the customer making the purchase
  */
 public record RegisterSaleRequest(int productId, int soldQuantity, int inventory, BigDecimal originalUnitPrice, 
-    BigDecimal sellPrice, BigDecimal totalPrice, int pastUnitsSold, String email) {
-    /**
-     * Validates and normalizes the supplied sale details.
-     * 
-     * @throws IllegalArgumentException if any value is invalid
-     */
-    public RegisterSaleRequest {
-        if (soldQuantity <= 0) {
-            throw new IllegalArgumentException("Quantity must be greater than zero.");
-        }
+	BigDecimal sellPrice, BigDecimal totalPrice, int pastUnitsSold, String email) {
+	/**
+	 * Validates and normalizes the supplied sale details.
+	 * 
+	 * @throws IllegalArgumentException if any value is invalid
+	 */
+	public RegisterSaleRequest {
+		if (soldQuantity <= 0) {
+			throw new IllegalArgumentException("Quantity must be greater than zero.");
+		}
 
-        if (inventory - soldQuantity < 0) {
-            throw new IllegalArgumentException("Inventory cannot be negative.");
-        }
+		if (inventory - soldQuantity < 0) {
+			throw new IllegalArgumentException("Inventory cannot be negative.");
+		}
 
-        if (sellPrice == null) {
-            throw new IllegalArgumentException("Selling price is required.");
-        }
+		if (sellPrice == null) {
+			throw new IllegalArgumentException("Selling price is required.");
+		}
 
-        if (email == null) {
-            email = "";
-        }
+		if (email == null) {
+			email = "";
+		}
 
-        email = email.strip();
-    }
+		email = email.strip();
+	}
 }

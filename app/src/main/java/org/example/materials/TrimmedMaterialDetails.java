@@ -9,4 +9,4 @@ import java.math.BigDecimal;
  * @param materialCost cost of the material per unit
  */
 public record TrimmedMaterialDetails(
-    String materialName, BigDecimal materialCost) {}
+	String materialName, BigDecimal materialCost) {}

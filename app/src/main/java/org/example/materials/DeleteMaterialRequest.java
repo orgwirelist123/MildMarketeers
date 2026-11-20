@@ -9,27 +9,27 @@ package org.example.materials;
  */
 
 public record DeleteMaterialRequest(
-    String materialName, int productId) {
-    
-    /**
-     * Validates and normalizes the supplied material details.
-     *
-     * @throws IllegalArgumentException if any editable value is invalid
-     */
-    public DeleteMaterialRequest {
-        if (materialName == null || materialName.isBlank()) {
-            throw new IllegalArgumentException("Material name is required.");
-        }
+	String materialName, int productId) {
+	
+	/**
+	 * Validates and normalizes the supplied material details.
+	 *
+	 * @throws IllegalArgumentException if any editable value is invalid
+	 */
+	public DeleteMaterialRequest {
+		if (materialName == null || materialName.isBlank()) {
+			throw new IllegalArgumentException("Material name is required.");
+		}
 
-        materialName = materialName.strip();
+		materialName = materialName.strip();
 
-        if (materialName.codePointCount(0, materialName.length()) > 50) {
-            throw new IllegalArgumentException(
-                "Material name must contain no more than 50 characters.");
-        }
+		if (materialName.codePointCount(0, materialName.length()) > 50) {
+			throw new IllegalArgumentException(
+				"Material name must contain no more than 50 characters.");
+		}
 
-        if (productId < 0) {
-            throw new IllegalArgumentException("Product id cannot be negative.");
-        }
-    }
+		if (productId < 0) {
+			throw new IllegalArgumentException("Product id cannot be negative.");
+		}
+	}
 }
