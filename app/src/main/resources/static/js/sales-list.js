@@ -163,7 +163,7 @@
     render();
 
     try {
-      const response = await fetch("/api/sales/list", {
+      const response = await fetch("/api/salesPage/listSales", {
         headers: { Accept: "application/json" },
         cache: "no-store"
       });
