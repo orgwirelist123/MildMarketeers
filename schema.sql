@@ -82,3 +82,9 @@ ALTER TABLE "Product" ADD CONSTRAINT "Product_parent_id_fkey" FOREIGN KEY (paren
 ALTER TABLE "Sale" ADD CONSTRAINT "Sale_product_id_fkey" FOREIGN KEY (product_id) REFERENCES "Product"(product_id);
 ALTER TABLE "TagFor" ADD CONSTRAINT "TagFor_product_id_fkey" FOREIGN KEY (product_id) REFERENCES "Product"(product_id);
 ALTER TABLE "TagFor" ADD CONSTRAINT "TagFor_tag_id_fkey" FOREIGN KEY (tag_id) REFERENCES "Tag"(tag_id);
+
+-- NULL means the production cost was not recorded for this sale.
+-- SaleHistory inherits this column from Sale.
+ALTER TABLE public."Sale"
+    ADD COLUMN production_cost_per_unit numeric(12,2)
+    CHECK (production_cost_per_unit >= 0);
