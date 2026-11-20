@@ -21,46 +21,46 @@ import org.springframework.web.bind.annotation.RestController;
 public class SaleController {
 
   private static final Logger LOGGER =
-      LoggerFactory.getLogger(SaleController.class);
+	  LoggerFactory.getLogger(SaleController.class);
 
   private final WholeSaleRepository repository = new WholeSaleRepository();
 
   public record SaleInput(
-      Integer quantity, BigDecimal unitPrice, BigDecimal discount, String email) {}
+	  Integer quantity, BigDecimal unitPrice, BigDecimal discount, String email) {}
 
   @PostMapping("/{productId}")
   public ResponseEntity<Map<String, String>> registerSale(
-      @PathVariable("productId") int productId,
-      @RequestBody SaleInput input) throws SQLException {
+	  @PathVariable("productId") int productId,
+	  @RequestBody SaleInput input) throws SQLException {
 
-    if (input == null || input.quantity() == null) {
-      throw new IllegalArgumentException("Quantity is required.");
-    }
+	if (input == null || input.quantity() == null) {
+	  throw new IllegalArgumentException("Quantity is required.");
+	}
 
-    WholeSaleRequest request = new WholeSaleRequest(
-        productId, input.quantity(), input.unitPrice(), input.discount(), input.email());
+	WholeSaleRequest request = new WholeSaleRequest(
+		productId, input.quantity(), input.unitPrice(), input.discount(), input.email());
 
-    if (!repository.register(request)) {
-      return ResponseEntity.status(404)
-          .body(Map.of("message", "This product no longer exists."));
-    }
+	if (!repository.register(request)) {
+	  return ResponseEntity.status(404)
+		  .body(Map.of("message", "This product no longer exists."));
+	}
 
-    return ResponseEntity.status(201)
-        .body(Map.of("message", "Sale registered successfully."));
+	return ResponseEntity.status(201)
+		.body(Map.of("message", "Sale registered successfully."));
   }
 
   @ExceptionHandler(IllegalArgumentException.class)
   public ResponseEntity<Map<String, String>> handleInvalidInput(
-      IllegalArgumentException exception) {
-    return ResponseEntity.badRequest()
-        .body(Map.of("message", exception.getMessage()));
+	  IllegalArgumentException exception) {
+	return ResponseEntity.badRequest()
+		.body(Map.of("message", exception.getMessage()));
   }
 
   @ExceptionHandler({SQLException.class, IllegalStateException.class})
   public ResponseEntity<Map<String, String>> handleStorageFailure(
-      Exception exception) {
-    LOGGER.error("Sale registration failed.", exception);
-    return ResponseEntity.status(500)
-        .body(Map.of("message", "Could not register the sale. Please check the sales list before retrying."));
+	  Exception exception) {
+	LOGGER.error("Sale registration failed.", exception);
+	return ResponseEntity.status(500)
+		.body(Map.of("message", "Could not register the sale. Please check the sales list before retrying."));
   }
 }

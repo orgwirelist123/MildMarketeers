@@ -1,191 +1,191 @@
 .database-grid {
-    display: grid;
-    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
-    align-items: start;
-    gap: 16px;
+	display: grid;
+	grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+	align-items: start;
+	gap: 16px;
 }
 
 .database-card {
-    padding: 18px 20px;
-    border: 1px solid var(--border);
-    border-radius: 20px;
-    background: var(--background);
+	padding: 18px 20px;
+	border: 1px solid var(--border);
+	border-radius: 20px;
+	background: var(--background);
 }
 
 .database-title {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 10px;
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	margin-bottom: 10px;
 }
 
 .database-title-text {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    min-width: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	min-width: 0;
 }
 
 .database-name {
-    margin: 0;
-    font-size: 1.1rem;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+	margin: 0;
+	font-size: 1.1rem;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
 }
 
 .database-meta {
-    color: var(--text-secondary);
-    font-size: 0.8rem;
+	color: var(--text-secondary);
+	font-size: 0.8rem;
 }
 
 .info-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    padding: 10px 0;
-    border-bottom: 1px solid var(--border);
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	padding: 10px 0;
+	border-bottom: 1px solid var(--border);
 }
 
 .info-row:has(+ .database-actions) {
-    border-bottom: none;
+	border-bottom: none;
 }
 
 .info-label {
-    flex-shrink: 0;
-    color: var(--text-secondary);
+	flex-shrink: 0;
+	color: var(--text-secondary);
 }
 
 .info-value {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    min-width: 0;
-    font-weight: 600;
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	min-width: 0;
+	font-weight: 600;
 }
 
 .file-path {
-    min-width: 0;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    font-size: 0.8rem;
-    font-weight: 500;
+	min-width: 0;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	font-size: 0.8rem;
+	font-weight: 500;
 }
 
 .database-actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin-top: 16px;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	margin-top: 16px;
 }
 
 .database-actions svg {
-    width: 16px;
-    height: 16px;
+	width: 16px;
+	height: 16px;
 }
 
 .btn-small {
-    padding: 5px 12px;
-    font-size: 0.85rem;
+	padding: 5px 12px;
+	font-size: 0.85rem;
 }
 
 .backups-heading {
-    margin: 0 0 12px;
-    font-size: 1.1rem;
+	margin: 0 0 12px;
+	font-size: 1.1rem;
 }
 
 .backup-list {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
 }
 
 .backup {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 10px 12px;
-    border: 1px solid var(--border);
-    border-radius: 16px;
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 10px 12px;
+	border: 1px solid var(--border);
+	border-radius: 16px;
 }
 
 .backup-info {
-    flex: 1;
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
+	flex: 1;
+	min-width: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
 }
 
 .backup-name {
-    font-weight: 600;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+	font-weight: 600;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
 }
 
 .backup-date {
-    color: var(--text-secondary);
-    font-size: 0.8rem;
+	color: var(--text-secondary);
+	font-size: 0.8rem;
 }
 
 
 .btn-delete {
-    color: var(--red);
+	color: var(--red);
 }
 
 .btn-delete:hover {
-    background: rgba(217, 83, 74, 0.1);
-    border-color: var(--red);
+	background: rgba(217, 83, 74, 0.1);
+	border-color: var(--red);
 }
 
 /* ===== Change Log Panel ===== */
 .change-filters {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin-bottom: 16px;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	margin-bottom: 16px;
 }
 
 .change-list {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
 }
 
 .change {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 10px 12px;
-    border: 1px solid var(--border);
-    border-radius: 16px;
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	padding: 10px 12px;
+	border: 1px solid var(--border);
+	border-radius: 16px;
 }
 
 .change-info {
-    flex: 1;
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
+	flex: 1;
+	min-width: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
 }
 
 .change-description {
-    font-weight: 600;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+	font-weight: 600;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
 }
 
 .change-date {
-    color: var(--text-secondary);
-    font-size: 0.8rem;
+	color: var(--text-secondary);
+	font-size: 0.8rem;
 }

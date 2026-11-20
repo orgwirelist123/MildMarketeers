@@ -18,24 +18,24 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/sales")
 public class SaleListController {
 
-  private static final Logger LOGGER =
-      LoggerFactory.getLogger(SaleListController.class);
+	private static final Logger LOGGER =
+			LoggerFactory.getLogger(SaleListController.class);
 
-  private final SaleQueryRepository repository = new SaleQueryRepository();
+	private final SaleQueryRepository repository = new SaleQueryRepository();
 
-  /** Returns saved sales, excluding sale history entries. */
-  @GetMapping("/list")
-  public ResponseEntity<List<SaleDetails>> listSales() throws SQLException {
-    return ResponseEntity.ok(repository.findAll());
-  }
+	/** Returns saved sales, excluding sale history entries. */
+	@GetMapping("/list")
+	public ResponseEntity<List<SaleDetails>> listSales() throws SQLException {
+		return ResponseEntity.ok(repository.findAll());
+	}
 
-  /** Logs storage failures and returns a message suitable for the page. */
-  @ExceptionHandler({SQLException.class, IllegalStateException.class})
-  public ResponseEntity<Map<String, String>> handleStorageFailure(
-      Exception exception) {
-    LOGGER.error("Could not load sales.", exception);
+	/** Logs storage failures and returns a message suitable for the page. */
+	@ExceptionHandler({SQLException.class, IllegalStateException.class})
+	public ResponseEntity<Map<String, String>> handleStorageFailure(
+			Exception exception) {
+		LOGGER.error("Could not load sales.", exception);
 
-    return ResponseEntity.status(500)
-        .body(Map.of("message", "Could not load sales. Please try again."));
-  }
+		return ResponseEntity.status(500)
+				.body(Map.of("message", "Could not load sales. Please try again."));
+	}
 }

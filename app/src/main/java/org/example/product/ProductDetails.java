@@ -14,5 +14,5 @@ import java.math.BigDecimal;
  * @param parentId product identifier if parent product, 0 if none
  */
 public record ProductDetails(
-    int productId, String name, BigDecimal sellPrice, int inventory,
-    int unitsSold, boolean archived, int parentId) {}
+	int productId, String name, BigDecimal sellPrice, int inventory,
+	int unitsSold, boolean archived, int parentId) {}

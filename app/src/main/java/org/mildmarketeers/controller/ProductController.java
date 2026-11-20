@@ -33,201 +33,201 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/products")
 public class ProductController {
 
-  private static final Logger LOGGER =
-      LoggerFactory.getLogger(ProductController.class);
+	private static final Logger LOGGER =
+			LoggerFactory.getLogger(ProductController.class);
 
-  private final ProductRepository repository = new ProductRepository();
+	private final ProductRepository repository = new ProductRepository();
 
-  // This will have to be refactored in the future, will need a bridge between these two repositories.
-  private final MaterialRepository materialRepository = new MaterialRepository();
+	// This will have to be refactored in the future, will need a bridge between these two repositories.
+	private final MaterialRepository materialRepository = new MaterialRepository();
 
-  /** Input shared by the Add Product and Edit Product forms. */
-  public record ProductInput(String name, BigDecimal sellPrice, Integer inventory, Integer parentId, ArrayList<TrimmedMaterialDetails> materials, java.util.List<String> tags, java.util.Map<String, String> tagColors) {
-    public ProductInput(String name, BigDecimal sellPrice, Integer inventory,
-        Integer parentId, ArrayList<TrimmedMaterialDetails> materials) {
-      this(name, sellPrice, inventory, parentId, materials, null, null);
-    }
-    public ProductInput(String name, BigDecimal sellPrice, Integer inventory,
-        Integer parentId, ArrayList<TrimmedMaterialDetails> materials, java.util.List<String> tags) {
-      this(name, sellPrice, inventory, parentId, materials, tags, null);
-    }
-  }
-  /** Selector shared by the Delete Product, Archive Product, and Duplicate Product forms. */
-  public record ProductSelector(int productId) {}
+	/** Input shared by the Add Product and Edit Product forms. */
+	public record ProductInput(String name, BigDecimal sellPrice, Integer inventory, Integer parentId, ArrayList<TrimmedMaterialDetails> materials, java.util.List<String> tags, java.util.Map<String, String> tagColors) {
+		public ProductInput(String name, BigDecimal sellPrice, Integer inventory,
+				Integer parentId, ArrayList<TrimmedMaterialDetails> materials) {
+			this(name, sellPrice, inventory, parentId, materials, null, null);
+		}
+		public ProductInput(String name, BigDecimal sellPrice, Integer inventory,
+				Integer parentId, ArrayList<TrimmedMaterialDetails> materials, java.util.List<String> tags) {
+			this(name, sellPrice, inventory, parentId, materials, tags, null);
+		}
+	}
+	/** Selector shared by the Delete Product, Archive Product, and Duplicate Product forms. */
+	public record ProductSelector(int productId) {}
 
-  /** Retrieves the current values to display in the editing form. */
-  @GetMapping("/{productId}")
-  public ResponseEntity<ProductDetails> getProduct(
-      @PathVariable("productId") int productId) throws SQLException {
-    return repository.findById(productId)
-        .map(product -> ResponseEntity.ok(product))
-        .orElseGet(() -> ResponseEntity.notFound().build());
-  }
+	/** Retrieves the current values to display in the editing form. */
+	@GetMapping("/{productId}")
+	public ResponseEntity<ProductDetails> getProduct(
+			@PathVariable("productId") int productId) throws SQLException {
+		return repository.findById(productId)
+				.map(product -> ResponseEntity.ok(product))
+				.orElseGet(() -> ResponseEntity.notFound().build());
+	}
 
-  /** Retrieves a list of all products. */
-  @GetMapping ("/list")
-  // @ExceptionHandler({SQLException.class, IllegalStateException.class})
-  public ResponseEntity<ArrayList<ProductDetails>> displayProducts() throws SQLException{
-    ArrayList<ProductDetails> products = repository.retrieveProducts();
-    return ResponseEntity.ok(products);
-  }
+	/** Retrieves a list of all products. */
+	@GetMapping ("/list")
+	// @ExceptionHandler({SQLException.class, IllegalStateException.class})
+	public ResponseEntity<ArrayList<ProductDetails>> displayProducts() throws SQLException{
+		ArrayList<ProductDetails> products = repository.retrieveProducts();
+		return ResponseEntity.ok(products);
+	}
 
-  @GetMapping ("/listAvailableParents/{productId}")
-  public ResponseEntity<ArrayList<ProductDetails>> displayParentProducts(
-      @PathVariable("productId") int productId) throws SQLException{
-    ArrayList<ProductDetails> products = repository.retrieveAvailableParentProducts(productId);
-    System.out.println("retrieved parent products");
-    System.out.println(products.size());
-    return ResponseEntity.ok(products);
-  }
+	@GetMapping ("/listAvailableParents/{productId}")
+	public ResponseEntity<ArrayList<ProductDetails>> displayParentProducts(
+			@PathVariable("productId") int productId) throws SQLException{
+		ArrayList<ProductDetails> products = repository.retrieveAvailableParentProducts(productId);
+		System.out.println("retrieved parent products");
+		System.out.println(products.size());
+		return ResponseEntity.ok(products);
+	}
 
-  /** Adds a product using the existing request validation and repository. */
-  @PostMapping
-  public ResponseEntity<Map<String, String>> addProduct(
-      @RequestBody ProductInput input) throws SQLException {
-    requireInventory(input);
+	/** Adds a product using the existing request validation and repository. */
+	@PostMapping
+	public ResponseEntity<Map<String, String>> addProduct(
+			@RequestBody ProductInput input) throws SQLException {
+		requireInventory(input);
 
-    AddProductRequest request =
-        new AddProductRequest(input.name(), input.sellPrice(), input.inventory(), input.parentId());
+		AddProductRequest request =
+				new AddProductRequest(input.name(), input.sellPrice(), input.inventory(), input.parentId());
 
-    int productId = repository.add(request, input.tags(), input.tagColors());
+		int productId = repository.add(request, input.tags(), input.tagColors());
 
-    if (productId == 0) {
-      throw new SQLException("The repository did not add the product.");
-    }
+		if (productId == 0) {
+			throw new SQLException("The repository did not add the product.");
+		}
 
-    // Add the materials, if there are any
-    if (input.materials != null) {
-      System.out.println(input.materials.size());
-      for (TrimmedMaterialDetails md : input.materials) {
-        AddMaterialRequest mdRequest = 
-          new AddMaterialRequest(md.materialName(), productId, md.materialCost(), "unit", new BigDecimal(0), new BigDecimal(0));
-        materialRepository.addMaterial(mdRequest);
-      }
-    }
+		// Add the materials, if there are any
+		if (input.materials != null) {
+			System.out.println(input.materials.size());
+			for (TrimmedMaterialDetails md : input.materials) {
+				AddMaterialRequest mdRequest = 
+					new AddMaterialRequest(md.materialName(), productId, md.materialCost(), "unit", new BigDecimal(0), new BigDecimal(0));
+				materialRepository.addMaterial(mdRequest);
+			}
+		}
 
-    return ResponseEntity.status(201)
-        .body(Map.of("message", "Product added successfully.", "productId", String.valueOf(productId)));
-  }
+		return ResponseEntity.status(201)
+				.body(Map.of("message", "Product added successfully.", "productId", String.valueOf(productId)));
+	}
 
-  /** Saves edits and reports when the selected product no longer exists. */
-  @PutMapping("/{productId}")
-  public ResponseEntity<Map<String, String>> editProduct(
-      @PathVariable("productId") int productId,
-      @RequestBody ProductInput input) throws SQLException {
-    requireInventory(input);
+	/** Saves edits and reports when the selected product no longer exists. */
+	@PutMapping("/{productId}")
+	public ResponseEntity<Map<String, String>> editProduct(
+			@PathVariable("productId") int productId,
+			@RequestBody ProductInput input) throws SQLException {
+		requireInventory(input);
 
-    EditProductRequest request =
-        new EditProductRequest(
-            productId, input.name(), input.sellPrice(), input.inventory(), input.parentId());
+		EditProductRequest request =
+				new EditProductRequest(
+						productId, input.name(), input.sellPrice(), input.inventory(), input.parentId());
 
-    if (!repository.update(request, input.tags(), input.tagColors())) {
-      return ResponseEntity.status(404)
-          .body(Map.of("message", "This product no longer exists."));
-    }
+		if (!repository.update(request, input.tags(), input.tagColors())) {
+			return ResponseEntity.status(404)
+					.body(Map.of("message", "This product no longer exists."));
+		}
 
-    // Remove previous materials and add the new materials, if there are any
-    if (input.materials != null) {
-      System.out.println(input.materials.size());
-      materialRepository.deleteAllMaterials(productId);
-      for (TrimmedMaterialDetails md : input.materials) {
-        AddMaterialRequest mdRequest = 
-          new AddMaterialRequest(md.materialName(), productId, md.materialCost(), "unit", new BigDecimal(0), new BigDecimal(0));
-        materialRepository.addMaterial(mdRequest);
-      }
-    }
+		// Remove previous materials and add the new materials, if there are any
+		if (input.materials != null) {
+			System.out.println(input.materials.size());
+			materialRepository.deleteAllMaterials(productId);
+			for (TrimmedMaterialDetails md : input.materials) {
+				AddMaterialRequest mdRequest = 
+					new AddMaterialRequest(md.materialName(), productId, md.materialCost(), "unit", new BigDecimal(0), new BigDecimal(0));
+				materialRepository.addMaterial(mdRequest);
+			}
+		}
 
-    return ResponseEntity.ok(
-        Map.of("message", "Product updated successfully."));
-  }
+		return ResponseEntity.ok(
+				Map.of("message", "Product updated successfully."));
+	}
 
-  /** Query the database for products that contain the input */
-  @PutMapping ("/search")
-  public ResponseEntity<Map<String, ArrayList<ProductDetails>>> queryProduct(@RequestBody String query) throws SQLException{
-    ArrayList<ProductDetails> products = repository.searchProducts(query);
-    return ResponseEntity.ok().body(Map.of("data", products));
-  };
+	/** Query the database for products that contain the input */
+	@PutMapping ("/search")
+	public ResponseEntity<Map<String, ArrayList<ProductDetails>>> queryProduct(@RequestBody String query) throws SQLException{
+		ArrayList<ProductDetails> products = repository.searchProducts(query);
+		return ResponseEntity.ok().body(Map.of("data", products));
+	};
 
-  /** Archives the selected product. **/
-  @PutMapping("/archive")
-  public ResponseEntity<Map<String, String>> archiveProduct(
-      @RequestBody ProductSelector selector) throws SQLException {
-    ArchiveProductRequest request =
-        new ArchiveProductRequest(selector.productId);
+	/** Archives the selected product. **/
+	@PutMapping("/archive")
+	public ResponseEntity<Map<String, String>> archiveProduct(
+			@RequestBody ProductSelector selector) throws SQLException {
+		ArchiveProductRequest request =
+				new ArchiveProductRequest(selector.productId);
 
-    if (!repository.archive(request)) {
-      return ResponseEntity.status(404)
-        .body(Map.of("message", "This product no longer exists."));
-    }
+		if (!repository.archive(request)) {
+			return ResponseEntity.status(404)
+				.body(Map.of("message", "This product no longer exists."));
+		}
 
-    return ResponseEntity.ok(
-      Map.of("message", "Product archived successfully."));
-  }
+		return ResponseEntity.ok(
+			Map.of("message", "Product archived successfully."));
+	}
 
-  /** Restores the selected product without changing stock or related records. */
-  @PutMapping("/restore")
-  public ResponseEntity<Map<String, String>> restoreProduct(
-      @RequestBody ProductSelector selector) throws SQLException {
-    if (!repository.restore(new ArchiveProductRequest(selector.productId()))) {
-      return ResponseEntity.status(404)
-          .body(Map.of("message", "This product no longer exists."));
-    }
-    return ResponseEntity.ok(Map.of("message", "Product restored successfully."));
-  }
+	/** Restores the selected product without changing stock or related records. */
+	@PutMapping("/restore")
+	public ResponseEntity<Map<String, String>> restoreProduct(
+			@RequestBody ProductSelector selector) throws SQLException {
+		if (!repository.restore(new ArchiveProductRequest(selector.productId()))) {
+			return ResponseEntity.status(404)
+					.body(Map.of("message", "This product no longer exists."));
+		}
+		return ResponseEntity.ok(Map.of("message", "Product restored successfully."));
+	}
 
-  /** Deletes the selected product. **/
-  @PutMapping("/delete")
-  public ResponseEntity<Map<String, String>> deleteProduct(
-      @RequestBody ProductSelector selector) throws SQLException {
-    DeleteProductRequest request =
-        new DeleteProductRequest(selector.productId);
+	/** Deletes the selected product. **/
+	@PutMapping("/delete")
+	public ResponseEntity<Map<String, String>> deleteProduct(
+			@RequestBody ProductSelector selector) throws SQLException {
+		DeleteProductRequest request =
+				new DeleteProductRequest(selector.productId);
 
-    if (!repository.delete(request)) {
-      return ResponseEntity.status(404)
-        .body(Map.of("message", "This product no longer exists."));
-    }
+		if (!repository.delete(request)) {
+			return ResponseEntity.status(404)
+				.body(Map.of("message", "This product no longer exists."));
+		}
 
-    return ResponseEntity.ok(
-      Map.of("message", "Product deleted successfully."));
-  }
+		return ResponseEntity.ok(
+			Map.of("message", "Product deleted successfully."));
+	}
 
-  /** Deletes the selected product. **/
-  @PutMapping("/duplicate")
-  public ResponseEntity<Map<String, String>> duplicateProduct(
-      @RequestBody ProductSelector selector) throws SQLException {
-    DuplicateProductRequest request =
-        new DuplicateProductRequest(selector.productId);
+	/** Deletes the selected product. **/
+	@PutMapping("/duplicate")
+	public ResponseEntity<Map<String, String>> duplicateProduct(
+			@RequestBody ProductSelector selector) throws SQLException {
+		DuplicateProductRequest request =
+				new DuplicateProductRequest(selector.productId);
 
-    if (!repository.duplicate(request)) {
-      return ResponseEntity.status(404)
-        .body(Map.of("message", "This product no longer exists."));
-    }
+		if (!repository.duplicate(request)) {
+			return ResponseEntity.status(404)
+				.body(Map.of("message", "This product no longer exists."));
+		}
 
-    return ResponseEntity.ok(
-      Map.of("message", "Product duplicated successfully."));
-  }
+		return ResponseEntity.ok(
+			Map.of("message", "Product duplicated successfully."));
+	}
 
-  /** Returns validation errors so the form can explain what needs correcting. */
-  @ExceptionHandler(IllegalArgumentException.class)
-  public ResponseEntity<Map<String, String>> handleInvalidInput(
-      IllegalArgumentException exception) {
-    return ResponseEntity.badRequest()
-        .body(Map.of("message", exception.getMessage()));
-  }
+	/** Returns validation errors so the form can explain what needs correcting. */
+	@ExceptionHandler(IllegalArgumentException.class)
+	public ResponseEntity<Map<String, String>> handleInvalidInput(
+			IllegalArgumentException exception) {
+		return ResponseEntity.badRequest()
+				.body(Map.of("message", exception.getMessage()));
+	}
 
-  /** Logs technical failures and returns a message suitable for the form. */
-  @ExceptionHandler({SQLException.class, IllegalStateException.class})
-  public ResponseEntity<Map<String, String>> handleStorageFailure(
-      Exception exception) {
-    LOGGER.error("Product operation failed.", exception);
+	/** Logs technical failures and returns a message suitable for the form. */
+	@ExceptionHandler({SQLException.class, IllegalStateException.class})
+	public ResponseEntity<Map<String, String>> handleStorageFailure(
+			Exception exception) {
+		LOGGER.error("Product operation failed.", exception);
 
-    return ResponseEntity.status(500)
-        .body(Map.of("message", "Could not complete the request. Please try again."));
-  }
+		return ResponseEntity.status(500)
+				.body(Map.of("message", "Could not complete the request. Please try again."));
+	}
 
-  private static void requireInventory(ProductInput input) {
-    if (input.inventory() == null) {
-      throw new IllegalArgumentException("Inventory is required.");
-    }
-  }
+	private static void requireInventory(ProductInput input) {
+		if (input.inventory() == null) {
+			throw new IllegalArgumentException("Inventory is required.");
+		}
+	}
 }

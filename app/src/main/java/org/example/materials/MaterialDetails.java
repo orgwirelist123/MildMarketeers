@@ -13,5 +13,5 @@ import java.math.BigDecimal;
  * @param usedQuantity quantity used of the unit
  */
 public record MaterialDetails(
-    String materialName, int productId, BigDecimal materialCost, String unitTerm,
-    BigDecimal unitQuantity, BigDecimal usedQuantity) {}
+	String materialName, int productId, BigDecimal materialCost, String unitTerm,
+	BigDecimal unitQuantity, BigDecimal usedQuantity) {}
