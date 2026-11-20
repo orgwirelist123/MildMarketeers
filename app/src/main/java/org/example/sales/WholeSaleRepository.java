@@ -88,9 +88,10 @@ public final class WholeSaleRepository {
         try (PreparedStatement statement = prepare(connection, """
             INSERT INTO public."SaleHistory"
                 (sale_id, product_id, date, time, quantity, unit_price,
-                 discount, email, change_id, change_date, change_time)
+                 discount, email, production_cost_per_unit,
+                 change_id, change_date, change_time)
             SELECT sale_id, product_id, date, time, quantity, unit_price,
-                   discount, email,
+                   discount, email, production_cost_per_unit,
                    (SELECT COALESCE(MAX(change_id), 0) + 1
                     FROM ONLY public."SaleHistory"),
                    CURRENT_DATE, LOCALTIME(0)
@@ -133,8 +134,20 @@ public final class WholeSaleRepository {
 
       try (PreparedStatement statement = prepare(connection, """
           INSERT INTO public."Sale"
-              (sale_id, product_id, date, time, quantity, unit_price, discount, email)
-          VALUES (?, ?, CURRENT_DATE, LOCALTIME(0), ?, ?, ?, ?)
+              (sale_id, product_id, date, time, quantity, unit_price, discount, email,
+               production_cost_per_unit)
+          VALUES (?, ?, CURRENT_DATE, LOCALTIME(0), ?, ?, ?, ?,
+              (SELECT ROUND(COALESCE(SUM(m.material_cost), 0), 2)
+               FROM ONLY public."Material" AS m
+               WHERE m.product_id IN (
+                   SELECT p.product_id
+                   FROM ONLY public."Product" AS p
+                   WHERE p.product_id = ?
+                   UNION
+                   SELECT p.parent_id
+                   FROM ONLY public."Product" AS p
+                   WHERE p.product_id = ?
+               )))
           ON CONFLICT (sale_id) DO NOTHING
           """)) {
         statement.setInt(1, saleId);
@@ -144,6 +157,8 @@ public final class WholeSaleRepository {
         statement.setBigDecimal(4, request.unitPrice());
         statement.setBigDecimal(5, request.discount());
         statement.setString(6, request.email());
+        statement.setInt(7, request.productId());
+        statement.setInt(8, request.productId());
 
         if (statement.executeUpdate() == 1) {
           return saleId;

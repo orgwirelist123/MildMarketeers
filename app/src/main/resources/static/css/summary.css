@@ -183,3 +183,53 @@
 .flatpickr-calendar .flatpickr-next-month:hover svg {
     fill: var(--primary-hover);
 }
+/* Connected summary charts */
+.summary-status {
+    margin: 12px 0 18px;
+    color: var(--text-secondary);
+}
+.summary-graphs .graph {
+    display: block;
+    height: auto;
+    min-height: 120px;
+    overflow-x: auto;
+    padding: 12px;
+    text-align: left;
+}
+.summary-graphs .graph svg {
+    display: block;
+    max-width: none;
+}
+.summary-graphs .graph svg text {
+    fill: var(--text-secondary);
+    font: 11px sans-serif;
+}
+.summary-graphs .graph rect:focus {
+    outline: 2px solid var(--accent);
+}
+.summary-empty {
+    padding: 16px 4px;
+    color: var(--text-secondary);
+}
+.top-arrow:disabled {
+    opacity: 0.45;
+    cursor: default;
+}
+@media (max-width: 900px) {
+    .summary-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Keep shared icon sizing from shrinking summary charts. */
+.summary-graphs .graph > svg {
+    width: max(100%, 640px);
+    height: 210px;
+    min-width: 640px;
+    flex-shrink: 0;
+}
+
+.summary-graphs .graph svg text,
+.summary-graphs .graph svg rect {
+    stroke: none;
+}
