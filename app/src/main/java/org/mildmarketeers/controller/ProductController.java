@@ -148,6 +148,13 @@ public class ProductController {
     return ResponseEntity.ok().body(Map.of("data", products));
   };
 
+  /** Query the database for products that contain the input */
+  @PutMapping ("/sort")
+  public ResponseEntity<Map<String, ArrayList<ProductDetails>>> sortProducts(@RequestBody String sortOrder) throws SQLException{
+    ArrayList<ProductDetails> products = repository.sortProducts(sortOrder);
+    return ResponseEntity.ok().body(Map.of("data", products));
+  };
+
   /** Archives the selected product. **/
   @PutMapping("/archive")
   public ResponseEntity<Map<String, String>> archiveProduct(

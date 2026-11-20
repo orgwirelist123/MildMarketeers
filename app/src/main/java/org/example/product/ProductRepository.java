@@ -20,12 +20,56 @@ public final class ProductRepository {
    * @return the list of products, or an empty result if they do not exist
    * @throws SQLException if the database query fails
    */
+  public ArrayList<ProductDetails> sortProducts(String order) throws SQLException {
+    String sql =
+        """
+        SELECT product_id, name, sell_price, inventory, units_sold, archived, parent_id
+        FROM ONLY public."Product"
+        ORDER BY ?
+        """;
+    
+    ArrayList<ProductDetails> products = new ArrayList<ProductDetails>();
+    try (Connection connection = DatabaseConnection.open(); PreparedStatement statement = connection.prepareStatement(sql)) {
+      statement.setString(1, order);
+      statement.setQueryTimeout(5);
+
+      try (ResultSet results = statement.executeQuery()) {
+
+        while(results.next())
+        {
+          int id = results.getInt("product_id");
+          String name = results.getString("name");
+          BigDecimal price = results.getBigDecimal("sell_price");
+          int inventory = results.getInt("inventory");
+          int unitsSold = results.getInt("units_sold");
+          boolean archived = results.getBoolean("archived");
+          int parentId = results.getInt("parent_id");
+          products.add(
+              new ProductDetails(id, name, price, inventory, unitsSold, archived, parentId));
+          System.out.println(name);
+        }
+
+        return products;
+      }
+
+    } catch (Exception e) {
+      // TODO: handle exception
+    }
+    return products;
+  }
+
+  /**
+   * Retrieves the product details of all the products in the database.
+   *
+   * @return the list of products, or an empty result if they do not exist
+   * @throws SQLException if the database query fails
+   */
   public ArrayList<ProductDetails> searchProducts(String query) throws SQLException {
     String sql =
         """
         SELECT product_id, name, sell_price, inventory, units_sold, archived, parent_id
         FROM ONLY public."Product"
-        WHERE name LIKE ?
+        WHERE LOWER(name) LIKE LOWER(?)
         """;
     
     ArrayList<ProductDetails> products = new ArrayList<ProductDetails>();
