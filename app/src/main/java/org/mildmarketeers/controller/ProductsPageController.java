@@ -13,6 +13,7 @@ import org.example.service.ProductsPageService;
 import org.example.service.ProductsPageService.ProductInput;
 import org.example.service.ProductsPageService.ProductSelector;
 import org.example.service.ProductsPageService.SaleInput;
+import org.example.tags.TagRepository;
 import org.example.service.ProductsPageService.MaterialInput;
 import org.example.service.ProductsPageService.MaterialSelector;
 import org.slf4j.Logger;
@@ -251,6 +252,12 @@ public class ProductsPageController {
         return service.retrieveMaterials(productId);
         // ArrayList<TrimmedMaterialDetails> materials = repository.retrieveMaterials(productId);
         // return ResponseEntity.ok(materials);
+    }
+
+    
+    @GetMapping("/getTagCatalog")
+    public TagRepository.Catalog getTagCatalog() throws SQLException {
+        return service.getTagCatalog();
     }
 
     /**

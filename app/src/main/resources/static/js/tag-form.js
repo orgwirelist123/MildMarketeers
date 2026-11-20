@@ -6,7 +6,7 @@ export function applyTagColor(element, color) {
 
 // Uses the existing chosen-tag and option templates from Claire's tag form.
 export async function fetchTagCatalog() {
-    const response = await fetch('/api/tags');
+    const response = await fetch('/api/productsPage/getTagCatalog');
     if (!response.ok) throw new Error("Could not load tags. Please try again.");
     const data = await response.json();
     if (!Array.isArray(data.labels) || !data.products) throw new Error("Invalid tag response.");

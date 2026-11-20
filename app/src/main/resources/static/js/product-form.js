@@ -131,7 +131,7 @@ import { makeRequest, readResponse, GetDefaultHeaderType, ERROR_MESSAGES } from 
   });
 
   async function refreshParentProducts(productId = 0) {
-    const response = await fetch(`/api/products/listAvailableParents/${productId}`);
+    const response = await fetch(`/api/productsPage/listAvailableProductsParents/${productId}`);
     const products = await readResponse(response);
     if (!Array.isArray(products)) {
       throw new Error("Could not load available parent products.");
@@ -192,7 +192,7 @@ import { makeRequest, readResponse, GetDefaultHeaderType, ERROR_MESSAGES } from 
     if (!parentCostLoading) return;
 
     try {
-      const response = await fetch(`/api/materials/list/${parentId}`);
+      const response = await fetch(`/api/productsPage/listMaterials/${parentId}`);
       const materials = await readResponse(response);
       if (!Array.isArray(materials)) throw new Error("Invalid parent materials response.");
       const total = materials.reduce((sum, material) => sum + moneyToCents(material.materialCost), 0n);
@@ -409,7 +409,7 @@ import { makeRequest, readResponse, GetDefaultHeaderType, ERROR_MESSAGES } from 
     showPanel(productId);
 
     try {
-      const response = await fetch(`/api/products/${id}`);
+      const response = await fetch(`/api/productsPage/getProduct/${id}`);
       const product = await readResponse(
         response,
         ERROR_MESSAGES.GENERAL.INVALID_RESPONSE,
@@ -425,7 +425,7 @@ import { makeRequest, readResponse, GetDefaultHeaderType, ERROR_MESSAGES } from 
       await refreshParentProducts(id);
       await setTargetParent(product.parentId);
 
-      const responseComponents = await fetch(`/api/materials/list/${id}`);
+      const responseComponents = await fetch(`/api/productsPage/listMaterials/${id}`);
       const productComponents = await readResponse(
         responseComponents,
         ERROR_MESSAGES.GENERAL.INVALID_RESPONSE,
@@ -548,7 +548,7 @@ import { makeRequest, readResponse, GetDefaultHeaderType, ERROR_MESSAGES } from 
 
     try {
       const response = await fetch(
-        isEditing ? `/api/products/${id}` : "/api/products",
+        isEditing ? `/api/productsPage/editProduct/${id}` : "/api/productsPage/addProduct",
         {
           method: isEditing ? "PUT" : "POST",
           headers: { "Content-Type": "application/json" },

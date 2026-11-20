@@ -258,7 +258,7 @@ export async function displayProducts(products){
 async function refresh()
 {
     const version = ++refreshVersion;
-    const response = await fetch(`/api/products/list`);
+    const response = await fetch(`/api/productsPage/listProducts`);
     const products = await readResponse(
         response, 
         ERROR_MESSAGES.GENERAL.INVALID_RESPONSE, 

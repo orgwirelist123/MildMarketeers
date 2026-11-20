@@ -19,6 +19,7 @@ import org.example.product.ProductRepository;
 import org.example.sales.SaleRepository;
 import org.example.sales.WholeSaleRepository;
 import org.example.sales.WholeSaleRequest;
+import org.example.tags.TagRepository;
 import org.mildmarketeers.controller.ProductController;
 import org.mildmarketeers.controller.ProductController.ProductInput;
 import org.mildmarketeers.controller.ProductController.ProductSelector;
@@ -40,6 +41,7 @@ public class ProductsPageService {
     private final ProductRepository productRepository = new ProductRepository();
     private final MaterialRepository materialRepository = new MaterialRepository();
     private final WholeSaleRepository saleRepository = new WholeSaleRepository();
+    private final TagRepository tagRepository = new TagRepository();
 
     /**
      * Input shared by the Add Product and Edit Product forms.
@@ -337,6 +339,11 @@ public class ProductsPageService {
             @PathVariable("productId") int productId) throws SQLException {
         ArrayList<TrimmedMaterialDetails> materials = materialRepository.retrieveMaterials(productId);
         return ResponseEntity.ok(materials);
+    }
+
+    
+    public TagRepository.Catalog getTagCatalog() throws SQLException {
+        return tagRepository.catalog();
     }
 
     /**

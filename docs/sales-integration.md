@@ -1,7 +1,7 @@
 # Sales integration
 
 ## Registration
-POST /api/sales/{productId} accepts:
+POST /api/productPage/registerSale/{productId} accepts:
 - quantity: positive integer
 - unitPrice: price per unit BEFORE discount
 - discount: dollar amount deducted ONCE from the entire sale

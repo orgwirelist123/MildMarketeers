@@ -46,7 +46,7 @@ import { refreshProducts } from './products-helper.js';
 
         try {
             const response = await fetch(
-                "/api/products/delete",
+                "/api/productsPage/deleteProduct",
                 {
                     method: "PUT",
                     headers: { "Content-Type": "application/json" },

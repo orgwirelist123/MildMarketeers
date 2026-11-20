@@ -121,7 +121,7 @@
     updateControls();
 
     try {
-      const response = await fetch(`/api/products/${id}`, { cache: "no-store" });
+      const response = await fetch(`/api/productsPage/getProduct/${id}`, { cache: "no-store" });
       const product = await readResponse(response);
 
       if (!Number.isInteger(product.inventory) || product.inventory < 0 ||
@@ -197,7 +197,7 @@
     updateControls();
 
     try {
-      const response = await fetch(`/api/sales/${productId}`, {
+      const response = await fetch(`/api/productsPage/registerSale/${productId}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)

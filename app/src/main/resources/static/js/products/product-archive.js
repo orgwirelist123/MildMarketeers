@@ -25,7 +25,7 @@ import { refreshProducts } from './products-helper.js';
         button.disabled = true;
 
         try {
-            const response = await fetch(`/api/products/${action}`, {
+            const response = await fetch(`/api/productsPage/archiveProduct/${action}`, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ productId })
